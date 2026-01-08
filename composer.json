@@ -13,5 +13,7 @@
             "email": "puleeno@gmail.com"
         }
     ],
-    "require": {}
+    "require": {
+        "teamtnt/tntsearch": "^4.1"
+    }
 }
