@@ -78,6 +78,17 @@ class UXBuilder
                     'heading' => 'Show Featured Items',
                     'default' => 'true',
                 ),
+                'preset' => array(
+                    'type' => 'select',
+                    'heading' => 'UI Preset',
+                    'default' => 'default',
+                    'options' => array(
+                        'default' => 'List View (Premium)',
+                        'grid' => 'Grid/Card View',
+                        'akselos' => 'Akselos Official UI',
+                        'custom' => 'Theme Custom Pattern',
+                    ),
+                ),
                 'layout' => array(
                     'type' => 'select',
                     'heading' => 'Layout',

@@ -34,8 +34,8 @@ class Handler
             'post_types' => $state['post_types'] ?? ['post', 'featured_item'],
         ]);
 
-        // For MVP, we'll simulate result rendering
-        $html = $this->render_results_html($results);
+        // Render results using the current state (includes presets)
+        $html = $this->render_results_html($results, $state);
 
         wp_send_json_success([
             'html' => $html,
@@ -43,29 +43,50 @@ class Handler
         ]);
     }
 
-    protected function render_results_html($results)
+    protected function render_results_html($results, $state = [])
     {
+        $preset = $state['preset'] ?? 'default';
         ob_start();
+
         if (empty($results['results'])) {
-            echo '<p class="no-results">No results found for your criteria.</p>';
+            echo apply_filters('jankx_search_no_results_html', '<p class="no-results">No results found for your criteria.</p>', $state);
         } else {
             foreach ($results['results'] as $post_id) {
-                // In a real scenario, we'd load post data or use a template
                 $post = get_post($post_id);
                 if ($post) {
-                    ?>
-                    <div class="search-result-item">
-                        <h3>
-                            <?php echo get_the_title($post); ?>
-                        </h3>
-                        <p>
-                            <?php echo get_the_excerpt($post); ?>
-                        </p>
-                    </div>
-                    <?php
+                    // Allow theme/plugin to override the entire item HTML
+                    $item_html = apply_filters('jankx_search_result_item_html', '', $post, $preset, $state);
+
+                    if (!empty($item_html)) {
+                        echo $item_html;
+                    } else {
+                        $this->render_default_item($post, $preset);
+                    }
                 }
             }
         }
         return ob_get_clean();
+    }
+
+    protected function render_default_item($post, $preset)
+    {
+        ?>
+        <div class="result-item">
+            <?php if (has_post_thumbnail($post)): ?>
+                <div class="result-image">
+                    <?php echo get_the_post_thumbnail($post, 'medium'); ?>
+                </div>
+            <?php endif; ?>
+            <div class="result-content">
+                <span class="result-label"><?php echo get_post_type($post); ?></span>
+                <h3 class="result-title">
+                    <a href="<?php echo get_permalink($post); ?>"><?php echo get_the_title($post); ?></a>
+                </h3>
+                <div class="result-excerpt">
+                    <?php echo wp_trim_words(get_the_excerpt($post), 25); ?>
+                </div>
+            </div>
+        </div>
+        <?php
     }
 }

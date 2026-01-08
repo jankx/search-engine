@@ -14,6 +14,7 @@
         }
     ],
     "require": {
-        "teamtnt/tntsearch": "^4.4"
+        "teamtnt/tntsearch": "^4.4",
+        "jankx/template-engine": "*"
     }
 }
