@@ -31,15 +31,17 @@ class Handler
             'filters' => $filters,
             'sort' => $sort,
             'limit' => 10,
+            'page' => $state['page'] ?? 1,
             'post_types' => $state['post_types'] ?? ['post', 'featured_item'],
         ]);
 
         // Render results using the current state (includes presets)
         $html = $this->render_results_html($results, $state);
+        $pagination_html = $this->render_pagination_html($results['total'], 10, $state['page'] ?? 1);
 
         wp_send_json_success([
             'html' => $html,
-            'pagination' => '', // TODO: Add pagination rendering
+            'pagination' => $pagination_html,
         ]);
     }
 
@@ -88,5 +90,37 @@ class Handler
             </div>
         </div>
         <?php
+    }
+
+    protected function render_pagination_html($total, $limit, $current_page)
+    {
+        $total_pages = ceil($total / $limit);
+        if ($total_pages <= 1)
+            return '';
+
+        ob_start();
+        ?>
+        <nav class="pagination-nav">
+            <ul class="pagination-list">
+                <?php if ($current_page > 1): ?>
+                    <li><a href="#" class="page-numbers" data-page="<?php echo $current_page - 1; ?>">&laquo; Previous</a></li>
+                <?php endif; ?>
+
+                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <li>
+                        <a href="#" class="page-numbers <?php echo ($i == $current_page) ? 'current' : ''; ?>"
+                            data-page="<?php echo $i; ?>">
+                            <?php echo $i; ?>
+                        </a>
+                    </li>
+                <?php endfor; ?>
+
+                <?php if ($current_page < $total_pages): ?>
+                    <li><a href="#" class="page-numbers" data-page="<?php echo $current_page + 1; ?>">Next &raquo;</a></li>
+                <?php endif; ?>
+            </ul>
+        </nav>
+        <?php
+        return ob_get_clean();
     }
 }

@@ -1,57 +1,56 @@
-# Hướng dẫn chuyển đổi MySQL Database sang TNTSearch Index
+# Hướng dẫn Quản lý Index với TNTSearch
 
-TNTSearch không trực tiếp sử dụng MySQL để tìm kiếm Full-text mà nó tạo ra một tệp chỉ mục (index) riêng biệt bằng SQLite để tối ưu tốc độ. Dưới đây là cách thực hiện cho WordPress.
+Hệ thống sử dụng TNTSearch để tạo chỉ mục tìm kiếm Full-text bằng tệp SQLite, giúp tăng tốc độ tìm kiếm vượt trội so với truy vấn MySQL thông thường.
 
-## 1. Cấu trúc Index
+## 1. Cơ chế hoạt động
+- **Initial Indexing**: Tạo file `resources.index` từ dữ liệu hiện có trong Database.
+- **Real-time Synchronization**: Tự động cập nhật chỉ mục mỗi khi có bài viết được tạo mới, cập nhật hoặc xóa thông qua hook `save_post`.
+- **Scheduled Rebuild**: Tự động xây dựng lại toàn bộ chỉ mục hàng ngày qua WP-Cron để đảm bảo tính toàn vẹn và tối ưu hóa file SQLite.
 
-Chúng ta sẽ tạo một tệp SQLite (ví dụ: `resources.index`) chứa các cột quan trọng từ bảng `wp_posts`:
-- `id`: ID của post
-- `title`: Tiêu đề bài viết
-- `content`: Nội dung bài viết (đã loại bỏ HTML/Shortcode)
-- `post_type`: Để lọc theo loại nội dung
+---
 
-## 2. Script chuyển đổi (Indexing)
+## 2. Các lệnh quản lý (WP-CLI)
 
-Bạn có thể sử dụng script PHP dưới đây để thực hiện việc indexing thủ công hoặc qua Cron job:
+Sử dụng WP-CLI để quản lý index nhanh chóng:
 
-```php
-use TeamTNT\TNTSearch\TNTSearch;
+- **Xây dựng lại toàn bộ index**:
+  ```bash
+  wp jankx-search rebuild
+  ```
+- **Xây dựng lại file index cụ thể**:
+  ```bash
+  wp jankx-search rebuild --index=my_custom.index
+  ```
 
-$tnt = new TNTSearch;
+---
 
-$tnt->loadConfig([
-    'driver'    => 'mysql',
-    'host'      => DB_HOST,
-    'database'  => DB_NAME,
-    'username'  => DB_USER,
-    'password'  => DB_PASSWORD,
-    'storage'   => '/path/to/storage/', // Nơi lưu trữ file .index
-    'stemmer'   => \TeamTNT\TNTSearch\Stemmer\VietnameseStemmer::class // Nếu có hỗ trợ tiếng Việt
-]);
+## 3. Tự động hóa với WP-Cron
 
-$indexer = $tnt->createIndex('resources.index');
-$indexer->query("SELECT id, post_title as title, post_content as content, post_type FROM wp_posts WHERE post_status = 'publish' AND post_type IN ('post', 'featured_item');");
-$indexer->run();
+Mặc định, hệ thống đăng ký một sự kiện định kỳ:
+- **Action**: `jankx_search_rebuild_index`
+- **Schedule**: `daily` (Mỗi ngày một lần)
+
+Bạn có thể kiểm tra trạng thái Cron bằng các plugin như WP Crontrol hoặc lệnh:
+```bash
+wp cron event list --hook=jankx_search_rebuild_index
 ```
 
-## 3. Cập nhật thời gian thực (Real-time update)
+---
 
-Để đảm bảo dữ liệu luôn mới, chúng ta sử dụng Hook của WordPress trong package:
+## 4. Tùy biến dữ liệu Index
 
+Để thêm các Meta Key hoặc thay đổi logic truy vấn dữ liệu vào Index, hãy tham khảo [Tài liệu Customization](./customization.md).
+
+Ví dụ nhanh: thêm taxonomy tùy chỉnh vào content có thể tìm kiếm:
 ```php
-add_action('save_post', function($post_id, $post, $update) {
-    if ($post->post_status != 'publish') return;
-    
-    // Logic cập nhật document vào TNTSearch index
-    $search = new SearchEngine('tntsearch', $config);
-    $search->update([
-        'id'    => $post_id,
-        'title' => $post->post_title,
-        /* ... các trường khác ... */
-    ]);
-}, 10, 3);
+add_filter('jankx_search_index_taxonomies', function($taxonomies) {
+    return array_merge($taxonomies, ['brand', 'location']);
+});
 ```
 
-## 4. Lưu ý quan trọng
-- **Phân mảnh (Fragmentation)**: Sau nhiều lần cập nhật, file SQLite có thể bị phân mảnh. Nên chạy `optimize` định kỳ.
-- **Dung lượng**: Với hàng chục ngàn bài viết, file index thường chỉ nặng vài MB, rất nhẹ cho Shared Hosting.
+---
+
+## 5. Cảnh báo trong Dashboard
+Nếu file index chưa được khởi tạo, một thông báo sẽ xuất hiện trong Admin Dashboard. Bạn có thể nhấn nút **"Rebuild Index Now"** để thực hiện ngay lập tức mà không cần dùng dòng lệnh.
+
+Hệ thống sẽ lưu vết lần rebuild cuối cùng qua Option: `jankx_search_last_rebuild_{index_name}`.

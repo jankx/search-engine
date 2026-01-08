@@ -44,12 +44,19 @@ class TNTSearchEngine extends AbstractEngine
 
         $this->tnt->selectIndex($index_name);
 
-        // Basic fuzzy search
-        $res = $this->tnt->search($keywords, $this->getConfig('limit', 10));
+        $limit = $args['limit'] ?? 10;
+        $page = $args['page'] ?? 1;
+        $offset = ($page - 1) * $limit;
+
+        // Get up to 500 results to allow for pagination in MVP
+        $res = $this->tnt->search($keywords, 500);
+
+        $total = $res['hits'] ?? 0;
+        $ids = array_slice($res['ids'] ?? [], $offset, $limit);
 
         return [
-            'results' => $res['ids'] ?? [],
-            'total' => count($res['ids'] ?? []),
+            'results' => $ids,
+            'total' => $total,
             'time' => $res['execution_time'] ?? 0,
         ];
     }

@@ -92,8 +92,27 @@ class JankxSearchHub {
             const target = e.target as HTMLSelectElement;
             if (target.closest('.jankx-search-sorter .sort-select')) {
                 this.state.sort = target.value;
-                this.state.page = 1;
                 this.search();
+            }
+        });
+
+        // Pagination
+        document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            const paginationLink = target.closest('.search-pagination .page-numbers') as HTMLElement;
+            if (paginationLink) {
+                e.preventDefault();
+                const pageNum = paginationLink.getAttribute('data-page');
+                if (pageNum) {
+                    this.state.page = parseInt(pageNum, 10);
+                    this.search();
+                    if (this.$results) {
+                        window.scrollTo({
+                            top: this.$results.getBoundingClientRect().top + window.scrollY - 100,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
             }
         });
     }
