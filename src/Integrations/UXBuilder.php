@@ -6,35 +6,104 @@ class UXBuilder
     public function init()
     {
         add_action('ux_builder_setup', array($this, 'register_elements'));
+        add_action('init', array($this, 'register_shortcodes'));
+    }
+
+    public function register_shortcodes()
+    {
+        add_shortcode('jankx_search_keyword', array($this, 'render_keyword'));
+        add_shortcode('jankx_search_filter', array($this, 'render_filter'));
+        add_shortcode('jankx_search_sorter', array($this, 'render_sorter'));
+        add_shortcode('jankx_search_results', array($this, 'render_results'));
     }
 
     public function register_elements()
     {
-        add_ux_builder_shortcode('jankx_search_hub', array(
-            'name' => __('Search Hub', 'jankx'),
-            'category' => __('Jankx', 'jankx'),
-            'priority' => 10,
+        $category = __('Jankx Search', 'jankx');
+
+        // 1. Keyword Element
+        add_ux_builder_shortcode('jankx_search_keyword', array(
+            'name' => __('Search Keyword', 'jankx'),
+            'category' => $category,
             'options' => array(
-                'post_types' => array(
-                    'type' => 'select',
-                    'heading' => 'Post Types',
-                    'multiple' => true,
-                    'options' => array(
-                        'post' => 'Posts',
-                        'featured_item' => 'Featured Items',
-                    ),
+                'placeholder' => array(
+                    'type' => 'textfield',
+                    'heading' => 'Placeholder',
+                    'default' => 'Search...',
                 ),
-                'taxonomies' => array(
+            ),
+        ));
+
+        // 2. Filter Element
+        add_ux_builder_shortcode('jankx_search_filter', array(
+            'name' => __('Search Filter', 'jankx'),
+            'category' => $category,
+            'options' => array(
+                'title' => array(
+                    'type' => 'textfield',
+                    'heading' => 'Filter Title',
+                ),
+                'taxonomy' => array(
                     'type' => 'select',
-                    'heading' => 'Filters (Taxonomies)',
-                    'multiple' => true,
+                    'heading' => 'Taxonomy',
                     'options' => array(
                         'industry' => 'Industries',
-                        'thought_leader' => 'Authors/Leaders',
+                        'thought_leader' => 'Authors',
                         'content_type' => 'Content Types',
                     ),
                 ),
             ),
         ));
+
+        // 3. Sorter Element
+        add_ux_builder_shortcode('jankx_search_sorter', array(
+            'name' => __('Search Sorter', 'jankx'),
+            'category' => $category,
+            'options' => array(
+                'label' => array(
+                    'type' => 'textfield',
+                    'heading' => 'Label',
+                    'default' => 'Sort by',
+                ),
+            ),
+        ));
+
+        // 4. Results Element
+        add_ux_builder_shortcode('jankx_search_results', array(
+            'name' => __('Search Results', 'jankx'),
+            'category' => $category,
+            'options' => array(
+                'show_featured' => array(
+                    'type' => 'checkbox',
+                    'heading' => 'Show Featured Items',
+                    'default' => 'true',
+                ),
+                'layout' => array(
+                    'type' => 'select',
+                    'heading' => 'Layout',
+                    'options' => array(
+                        'list' => 'List View',
+                        'grid' => 'Grid View',
+                    ),
+                ),
+            ),
+        ));
+    }
+
+    public function render_keyword($atts)
+    {
+        return (new \Jankx\SearchEngine\UI\Components\Keyword())->render($atts);
+    }
+    public function render_filter($atts)
+    {
+        return (new \Jankx\SearchEngine\UI\Components\Filter())->render($atts);
+    }
+    public function render_sorter($atts)
+    {
+        return (new \Jankx\SearchEngine\UI\Components\Sorter())->render($atts);
+    }
+    public function render_results($atts)
+    {
+        return (new \Jankx\SearchEngine\UI\Components\Results())->render($atts);
     }
 }

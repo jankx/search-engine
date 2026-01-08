@@ -24,6 +24,41 @@ class Loader
     {
         $this->init_integrations();
         $this->init_ui();
+        $this->init_ajax();
+
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_assets'));
+    }
+
+    /**
+     * Initialize AJAX handler
+     */
+    protected function init_ajax()
+    {
+        $ajax_handler = new \Jankx\SearchEngine\Ajax\Handler();
+        $ajax_handler->init();
+    }
+
+    public function enqueue_assets()
+    {
+        wp_enqueue_style(
+            'jankx-search-engine',
+            content_url('plugins/akselos-customizer/vendor/jankx/search-engine/assets/css/search-engine.css'),
+            array(),
+            '1.0.0'
+        );
+
+        wp_enqueue_script(
+            'jankx-search-engine',
+            content_url('plugins/akselos-customizer/vendor/jankx/search-engine/assets/js/search-engine.js'),
+            array('jquery'),
+            '1.0.0',
+            true
+        );
+
+        wp_localize_script('jankx-search-engine', 'jankx_search_config', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('jankx_search_nonce'),
+        ));
     }
 
     /**
