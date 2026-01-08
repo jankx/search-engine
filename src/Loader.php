@@ -145,6 +145,10 @@ class Loader
         // Boot UX Builder if it's Flatsome environment
         $ux_builder = new UXBuilder();
         $ux_builder->init();
+
+        // Boot Gutenberg blocks
+        $gutenberg = new Gutenberg();
+        $gutenberg->init();
     }
 
     /**
