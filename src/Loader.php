@@ -49,15 +49,16 @@ class Loader
         $last_rebuild = get_option('jankx_search_last_rebuild_resources.index');
         if (!$last_rebuild) {
             ?>
-                        <div class="notice notice-warning is-dismissible">
-                            <p>
-                                <?php _e('<strong>Jankx Search:</strong> The search index has not been built yet. Please rebuild it to enable search functionality.', 'jankx'); ?>
-                                <a href="<?php echo esc_url(add_query_arg('jankx_search_rebuild', '1')); ?>" class="button button-primary" style="margin-left: 10px;">
-                                    <?php _e('Rebuild Index Now', 'jankx'); ?>
-                                </a>
-                            </p>
-                        </div>
-                        <?php
+            <div class="notice notice-warning is-dismissible">
+                <p>
+                    <?php _e('<strong>Jankx Search:</strong> The search index has not been built yet. Please rebuild it to enable search functionality.', 'jankx'); ?>
+                    <a href="<?php echo esc_url(add_query_arg('jankx_search_rebuild', '1')); ?>" class="button button-primary"
+                        style="margin-left: 10px;">
+                        <?php _e('Rebuild Index Now', 'jankx'); ?>
+                    </a>
+                </p>
+            </div>
+            <?php
         }
 
         if (isset($_GET['jankx_search_rebuild']) && $_GET['jankx_search_rebuild'] === '1') {
@@ -89,17 +90,19 @@ class Loader
             return;
         }
 
-        $allowed_types = array('post', 'featured_item');
+        $allowed_types = apply_filters('jankx_search_index_post_types', array('post', 'featured_item'));
         if (!in_array($post->post_type, $allowed_types)) {
             return;
         }
 
-        $engine = \Jankx\SearchEngine\SearchEngine::getInstance('tntsearch');
-        $engine->getDriver()->update([
+        $document = apply_filters('jankx_search_sync_document', [
             'id' => $post_id,
             'title' => $post->post_title,
             'content' => strip_tags($post->post_content),
-        ]);
+        ], $post);
+
+        $engine = \Jankx\SearchEngine\SearchEngine::getInstance('tntsearch');
+        $engine->getDriver()->update($document);
     }
 
     /**

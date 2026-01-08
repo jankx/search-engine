@@ -20,19 +20,23 @@ add_filter('jankx_search_indexer_select', function($sql) {
 });
 ```
 
-### Thêm Post Types hoặc Taxonomies
+### Thêm Taxonomies vào nội dung tìm kiếm
 ```php
-// Thêm post type 'webinar' vào index
-add_filter('jankx_search_index_post_types', function($post_types) {
-    $post_types[] = 'webinar';
-    return $post_types;
-});
-
-// Thêm taxonomy 'tag' vào nội dung tìm kiếm
 add_filter('jankx_search_index_taxonomies', function($taxonomies) {
     $taxonomies[] = 'post_tag';
     return $taxonomies;
 });
+```
+
+### Đồng bộ dữ liệu real-time
+Khi bạn thêm các trường tùy chỉnh vào index (qua SQL), bạn cũng cần đảm bảo chúng được cập nhật khi bài viết được lưu thông qua hook `jankx_search_sync_document`.
+
+```php
+add_filter('jankx_search_sync_document', function($document, $post) {
+    // Thêm dữ liệu meta vào document để TNTSearch update
+    $document['resource_type'] = get_post_meta($post->ID, '_akselos_resource_type', true);
+    return $document;
+}, 10, 2);
 ```
 
 ---
