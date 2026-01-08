@@ -15,7 +15,9 @@ class Handler
     {
         check_ajax_referer('jankx_search_nonce', 'nonce');
 
-        $state = $_POST['state'] ?? [];
+        $state_raw = $_POST['state'] ?? '{}';
+        $state = json_decode(stripslashes($state_raw), true);
+
         $keywords = $state['q'] ?? '';
         $filters = $state['filters'] ?? [];
         $sort = $state['sort'] ?? 'relevance';
@@ -29,6 +31,7 @@ class Handler
             'filters' => $filters,
             'sort' => $sort,
             'limit' => 10,
+            'post_types' => $state['post_types'] ?? ['post', 'featured_item'],
         ]);
 
         // For MVP, we'll simulate result rendering

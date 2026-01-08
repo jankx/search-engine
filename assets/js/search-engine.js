@@ -1,98 +1,11 @@
-(function ($) {
-    'use strict';
-
-    class JankxSearchHub {
-        constructor() {
-            this.state = {
-                q: '',
-                filters: {},
-                sort: 'relevance',
-                page: 1
-            };
-            this.$container = $('.jankx-search-results-container');
-            this.debounceTimer = null;
-
-            this.init();
-        }
-
-        init() {
-            this.bindEvents();
-        }
-
-        bindEvents() {
-            const self = this;
-
-            // Keyword Search (Debounced)
-            $(document).on('input', '.jankx-search-keyword .search-input', function () {
-                self.state.q = $(this).val();
-                self.state.page = 1;
-                self.debounceSearch();
-            });
-
-            // Filters
-            $(document).on('change', '.jankx-search-filter input[type="checkbox"]', function () {
-                const $filter = $(this).closest('.jankx-search-filter');
-                const taxonomy = $filter.attr('class').split('filter-')[1].split(' ')[0];
-
-                if (!self.state.filters[taxonomy]) {
-                    self.state.filters[taxonomy] = [];
-                }
-
-                const val = $(this).val();
-                if ($(this).is(':checked')) {
-                    self.state.filters[taxonomy].push(val);
-                } else {
-                    self.state.filters[taxonomy] = self.state.filters[taxonomy].filter(item => item !== val);
-                }
-
-                self.state.page = 1;
-                self.search();
-            });
-
-            // Sorter
-            $(document).on('change', '.jankx-search-sorter .sort-select', function () {
-                self.state.sort = $(this).val();
-                self.state.page = 1;
-                self.search();
-            });
-        }
-
-        debounceSearch() {
-            clearTimeout(this.debounceTimer);
-            this.debounceTimer = setTimeout(() => {
-                this.search();
-            }, 500);
-        }
-
-        search() {
-            const self = this;
-            const $results = $('.jankx-search-results-container .results-grid');
-
-            $results.addClass('loading').css('opacity', 0.5);
-
-            $.ajax({
-                url: jankx_search_config.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'jankx_search_query',
-                    nonce: jankx_search_config.nonce,
-                    state: self.state
-                },
-                success: function (response) {
-                    if (response.success) {
-                        $results.html(response.data.html);
-                        $('.search-pagination').html(response.data.pagination);
-                    }
-                },
-                complete: function () {
-                    $results.removeClass('loading').css('opacity', 1);
-                }
-            });
-        }
-    }
-
-    $(document).ready(function () {
-        new JankxSearchHub();
-    });
-
-})(jQuery);
+(()=>{var l=(r,t)=>()=>(t||r((t={exports:{}}).exports,t),t.exports);var h=l(()=>{var a=class{state={q:"",filters:{},sort:"relevance",page:1};settings={};debounceTimer=null;$results=null;$pagination=null;constructor(){this.$results=document.querySelector(".jankx-search-results-container .results-grid"),this.$pagination=document.querySelector(".search-pagination"),this.init()}init(){this.collectSettings(),this.bindEvents()}collectSettings(){document.querySelectorAll("[data-settings]").forEach(e=>{let s=e.getAttribute("data-settings");if(s)try{let n=JSON.parse(s);this.settings={...this.settings,...n}}catch(n){console.error("Failed to parse settings",n)}})}bindEvents(){document.addEventListener("input",t=>{let e=t.target;e.closest(".jankx-search-keyword .search-input")&&(this.state.q=e.value,this.state.page=1,this.debounceSearch())}),document.addEventListener("change",t=>{let e=t.target;if(e.matches('.jankx-search-filter input[type="checkbox"]')){let n=e.closest(".jankx-search-filter").className.match(/filter-([^\s]+)/);if(n){let i=n[1];this.state.filters[i]||(this.state.filters[i]=[]);let o=e.value;e.checked?this.state.filters[i].push(o):this.state.filters[i]=this.state.filters[i].filter(c=>c!==o),this.state.page=1,this.search()}}}),document.addEventListener("change",t=>{let e=t.target;e.closest(".jankx-search-sorter .sort-select")&&(this.state.sort=e.value,this.state.page=1,this.search())})}debounceSearch(){this.debounceTimer&&window.clearTimeout(this.debounceTimer),this.debounceTimer=window.setTimeout(()=>{this.search()},500)}async search(){if(!this.$results)return;this.showSkeleton();let t=new FormData;t.append("action","jankx_search_query"),t.append("nonce",jankx_search_config.nonce),t.append("state",JSON.stringify({...this.settings,...this.state}));try{let s=await(await fetch(jankx_search_config.ajax_url,{method:"POST",body:t})).json();s.success&&(this.$results.innerHTML=s.data.html,this.$pagination&&(this.$pagination.innerHTML=s.data.pagination))}catch(e){console.error("Search failed:",e),this.$results.innerHTML='<p class="error-message">An error occurred while searching. Please try again.</p>'}finally{this.$results.classList.remove("loading"),this.$results.style.opacity="1"}}showSkeleton(){this.$results&&(this.$results.classList.add("loading"),this.$results.innerHTML=this.getSkeletonHtml())}getSkeletonHtml(){let t="";for(let s=0;s<3;s++)t+=`
+                <div class="jankx-skeleton-item">
+                    <div class="skeleton-img"></div>
+                    <div class="skeleton-text">
+                        <div class="skeleton-line title"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line" style="width: 40%"></div>
+                    </div>
+                </div>
+            `;return t}};document.addEventListener("DOMContentLoaded",()=>{new a})});h();})();

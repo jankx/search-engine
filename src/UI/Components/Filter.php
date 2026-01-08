@@ -21,7 +21,8 @@ class Filter extends AbstractComponent
 
         ob_start();
         ?>
-        <div class="jankx-search-filter filter-<?php echo esc_attr($taxonomy); ?>">
+        <div class="jankx-search-filter filter-<?php echo esc_attr($taxonomy); ?>"
+            data-settings="<?php echo esc_attr(json_encode($atts)); ?>">
             <h4 class="filter-title">
                 <?php echo esc_html($atts['title'] ?? $tax_obj->label); ?>
             </h4>

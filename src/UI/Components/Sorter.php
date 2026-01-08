@@ -9,7 +9,7 @@ class Sorter extends AbstractComponent
     {
         ob_start();
         ?>
-        <div class="jankx-search-sorter">
+        <div class="jankx-search-sorter" data-settings="<?php echo esc_attr(json_encode($atts)); ?>">
             <span>
                 <?php echo esc_html($atts['label'] ?? 'Sort by'); ?>
             </span>

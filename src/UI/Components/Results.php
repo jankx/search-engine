@@ -9,7 +9,7 @@ class Results extends AbstractComponent
     {
         ob_start();
         ?>
-        <div class="jankx-search-results-container">
+        <div class="jankx-search-results-container" data-settings="<?php echo esc_attr(json_encode($atts)); ?>">
             <!-- Featured Section if enabled -->
             <?php if (!empty($atts['show_featured'])): ?>
                 <div class="featured-results row">

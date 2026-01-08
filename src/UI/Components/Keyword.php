@@ -9,7 +9,7 @@ class Keyword extends AbstractComponent
     {
         ob_start();
         ?>
-        <div class="jankx-search-keyword">
+        <div class="jankx-search-keyword" data-settings="<?php echo esc_attr(json_encode($atts)); ?>">
             <div class="search-bar-wrapper">
                 <input type="text" name="q" placeholder="<?php echo esc_attr($atts['placeholder'] ?? 'Search...'); ?>"
                     class="search-input">

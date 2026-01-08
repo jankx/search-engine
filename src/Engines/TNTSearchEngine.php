@@ -3,27 +3,72 @@ namespace Jankx\SearchEngine\Engines;
 
 class TNTSearchEngine extends AbstractEngine
 {
+    protected $tnt;
+
     protected function boot()
     {
-        // Initialize TNTSearch instance with config
+        $this->tnt = new \TeamTNT\TNTSearch\TNTSearch();
+
+        $storage = $this->getConfig('storage');
+        if (!$storage) {
+            $upload_dir = wp_upload_dir();
+            $storage = $upload_dir['basedir'] . '/jankx-search';
+        }
+
+        if (!file_exists($storage)) {
+            mkdir($storage, 0755, true);
+        }
+
+        $this->tnt->loadConfig([
+            'driver' => 'mysql',
+            'host' => DB_HOST,
+            'database' => DB_NAME,
+            'username' => DB_USER,
+            'password' => DB_PASSWORD,
+            'storage' => $storage,
+        ]);
     }
 
     public function search($keywords, array $args = [])
     {
-        // TNTSearch logic using $this->config
+        $index_name = $this->getConfig('index', 'resources.index');
+        $storage = $this->tnt->config['storage'];
+
+        if (!file_exists($storage . $index_name)) {
+            return [
+                'results' => [],
+                'total' => 0,
+                'time' => 0,
+            ];
+        }
+
+        $this->tnt->selectIndex($index_name);
+
+        // Basic fuzzy search
+        $res = $this->tnt->search($keywords, $this->getConfig('limit', 10));
+
         return [
-            'results' => [],
-            'total' => 0
+            'results' => $res['ids'] ?? [],
+            'total' => count($res['ids'] ?? []),
+            'time' => $res['execution_time'] ?? 0,
         ];
     }
 
     public function update($document)
     {
-        // Real-time indexing logic
+        $index_name = $this->getConfig('index', 'resources.index');
+        $this->tnt->selectIndex($index_name);
+        $indexer = $this->tnt->getIndex();
+
+        $indexer->update($document['id'], $document);
     }
 
     public function delete($id)
     {
-        // Remove from index
+        $index_name = $this->getConfig('index', 'resources.index');
+        $this->tnt->selectIndex($index_name);
+        $indexer = $this->tnt->getIndex();
+
+        $indexer->delete($id);
     }
 }
