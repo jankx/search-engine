@@ -15,6 +15,9 @@
     ],
     "require": {
         "teamtnt/tntsearch": "^4.4",
-        "jankx/template-engine": "*"
-    }
+        "jankx/template-engine": "^2.0",
+        "tracy/tracy": "^2.10",
+        "latte/latte": "^3.0"
+    },
+    "minimum-stability": "dev"
 }
