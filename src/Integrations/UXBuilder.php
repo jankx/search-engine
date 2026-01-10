@@ -6,7 +6,11 @@ class UXBuilder
     public function init()
     {
         add_action('ux_builder_setup', array($this, 'register_elements'));
-        add_action('init', array($this, 'register_shortcodes'));
+        if (did_action('init')) {
+            $this->register_shortcodes();
+        } else {
+            add_action('init', array($this, 'register_shortcodes'));
+        }
     }
 
     public function register_shortcodes()

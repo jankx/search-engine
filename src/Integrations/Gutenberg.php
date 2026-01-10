@@ -10,8 +10,13 @@ class Gutenberg
 {
     public function init()
     {
-        add_action('init', array($this, 'register_blocks'));
-        add_action('init', array($this, 'register_patterns'));
+        if (did_action('init')) {
+            $this->register_blocks();
+            $this->register_patterns();
+        } else {
+            add_action('init', array($this, 'register_blocks'));
+            add_action('init', array($this, 'register_patterns'));
+        }
         add_action('enqueue_block_editor_assets', array($this, 'enqueue_block_assets'));
     }
 
