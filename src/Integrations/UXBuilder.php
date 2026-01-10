@@ -21,10 +21,15 @@ class UXBuilder
     {
         $category = __('Jankx Search', 'jankx');
 
+        $scripts = array('jankx-search-engine');
+        $styles = array('jankx-search-engine');
+
         // 1. Keyword Element
         add_ux_builder_shortcode('jankx_search_keyword', array(
             'name' => __('Search Keyword', 'jankx'),
             'category' => $category,
+            'scripts' => $scripts,
+            'styles' => $styles,
             'options' => array(
                 'placeholder' => array(
                     'type' => 'textfield',
@@ -38,6 +43,8 @@ class UXBuilder
         add_ux_builder_shortcode('jankx_search_filter', array(
             'name' => __('Search Filter', 'jankx'),
             'category' => $category,
+            'scripts' => $scripts,
+            'styles' => $styles,
             'options' => array(
                 'title' => array(
                     'type' => 'textfield',
@@ -47,9 +54,8 @@ class UXBuilder
                     'type' => 'select',
                     'heading' => 'Taxonomy',
                     'options' => array(
-                        'industry' => 'Industries',
                         'thought_leader' => 'Authors',
-                        'content_type' => 'Content Types',
+                        'industry' => 'Industries',
                     ),
                 ),
             ),
@@ -59,6 +65,8 @@ class UXBuilder
         add_ux_builder_shortcode('jankx_search_sorter', array(
             'name' => __('Search Sorter', 'jankx'),
             'category' => $category,
+            'scripts' => $scripts,
+            'styles' => $styles,
             'options' => array(
                 'label' => array(
                     'type' => 'textfield',
@@ -72,6 +80,8 @@ class UXBuilder
         add_ux_builder_shortcode('jankx_search_results', array(
             'name' => __('Search Results', 'jankx'),
             'category' => $category,
+            'scripts' => $scripts,
+            'styles' => $styles,
             'options' => array(
                 'show_featured' => array(
                     'type' => 'checkbox',
