@@ -26,9 +26,8 @@ class Gutenberg
                     'categories' => array('header'),
                     'content' => '<!-- wp:columns {"className":"jankx-search-hub"} -->
                                     <div class="wp-block-columns jankx-search-hub"><!-- wp:column {"width":"30%"} -->
-                                    <div class="wp-block-column" style="flex-basis:30%"><!-- wp:jankx/search-filter {"title":"Content Type","taxonomy":"content_type"} /-->
-                                    <!-- wp:jankx/search-filter {"title":"Industries","taxonomy":"industry"} /-->
-                                    <!-- wp:jankx/search-filter {"title":"Authors","taxonomy":"thought_leader"} /--></div>
+                                    <div class="wp-block-column" style="flex-basis:30%"><!-- wp:jankx/search-filter {"title":"Authors","taxonomy":"thought_leader"} /-->
+                                    <!-- wp:jankx/search-filter {"title":"Industries","taxonomy":"industry"} /--></div>
                                     <!-- /wp:column -->
 
                                     <!-- wp:column {"width":"70%"} -->

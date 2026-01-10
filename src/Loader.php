@@ -2,6 +2,7 @@
 namespace Jankx\SearchEngine;
 
 use Jankx\SearchEngine\Integrations\UXBuilder;
+use Jankx\SearchEngine\Integrations\Gutenberg;
 
 class Loader
 {
