@@ -12,15 +12,12 @@ abstract class AbstractComponent implements Component
         return $this->name;
     }
 
-    protected function get_template($template_name, $data = [])
+    protected function render_template(string|array $template, array $data = [])
     {
-        // Simple template loader logic could go here
-        extract($data);
-        ob_start();
-        $template_path = sprintf('%s/templates/%s.php', dirname(__DIR__), $template_name);
-        if (file_exists($template_path)) {
-            include $template_path;
+        $defaultPath = sprintf('%s/views', dirname(dirname(dirname(__DIR__))));
+        if (!function_exists('jankx_template')) {
+            throw new \Exception('Jankx Template Engine is not initialized.');
         }
-        return ob_get_clean();
+        return jankx_template($defaultPath, $template, $data, false);
     }
 }

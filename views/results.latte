@@ -1,0 +1,16 @@
+<div class="jankx-search-results-container" data-settings="{$atts|json}">
+    {* Featured Section if enabled *}
+    <div n:if="!empty($atts['show_featured'])" class="featured-results row">
+        {do do_action('jankx_search_render_featured', $atts)}
+    </div>
+
+    <div class="search-results {$layout_class}">
+        <div class="results-grid">
+            {do do_action('jankx_search_results_initial_render', $atts)}
+        </div>
+    </div>
+
+    <div class="search-pagination">
+        {do do_action('jankx_search_render_pagination', $atts)}
+    </div>
+</div>
