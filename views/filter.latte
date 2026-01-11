@@ -1,5 +1,5 @@
 <div class="jankx-search-filter filter-{$taxonomy}" data-settings="{$atts|json}">
-    <h4 n:ifset="$atts['title'] ?? $tax_obj->label" class="filter-title">
+    <h4 n:if="!empty($atts['title']) || !empty($tax_obj->label)" class="filter-title">
         {$atts['title'] ?? $tax_obj->label}
     </h4>
     <ul class="filter-list">
