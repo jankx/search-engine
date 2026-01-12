@@ -43,17 +43,23 @@ class Handler
             }
         }
 
+        $limit = isset($state['limit']) ? (int) $state['limit'] : 10;
         $results = $engine->search($keywords, [
             'filters' => $filters,
             'sort' => $sort,
-            'limit' => 10,
+            'limit' => $limit,
             'page' => $state['page'] ?? 1,
             'post_types' => $post_types,
         ]);
 
         // Render results using the current state (includes presets)
         $html = $this->render_results_html($results, $state);
-        $pagination_html = $this->render_pagination_html($results['total'], 10, $state['page'] ?? 1);
+
+        $show_pagination = $state['show_pagination'] ?? 'true';
+        $pagination_html = '';
+        if ($show_pagination === 'true' || $show_pagination === true) {
+            $pagination_html = $this->render_pagination_html($results['total'], $limit, $state['page'] ?? 1, $state);
+        }
 
         wp_send_json_success([
             'html' => $html,
@@ -61,7 +67,7 @@ class Handler
         ]);
     }
 
-    protected function render_results_html($results, $state = [])
+    public function render_results_html($results, $state = [])
     {
         $preset = $state['preset'] ?? 'default';
         ob_start();
@@ -108,11 +114,23 @@ class Handler
         <?php
     }
 
-    protected function render_pagination_html($total, $limit, $current_page)
+    public function render_pagination_html($total, $limit, $current_page, $state = [])
     {
         $total_pages = ceil($total / $limit);
         if ($total_pages <= 1)
             return '';
+
+        if (function_exists('flatsome_pagination')) {
+            // Flatsome pagination needs a WP_Query object
+            $query = new \WP_Query();
+            $query->found_posts = $total;
+            $query->max_num_pages = $total_pages;
+            $query->query_vars['paged'] = $current_page;
+
+            ob_start();
+            echo flatsome_pagination($query);
+            return ob_get_clean();
+        }
 
         ob_start();
         ?>

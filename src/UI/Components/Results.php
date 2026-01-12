@@ -9,13 +9,15 @@ class Results extends AbstractComponent
     {
         $atts = array_merge([
             'post_type_post' => 'true', // Default post type
+            'show_pagination' => 'true', // Default pagination visibility
         ], $atts);
 
         $preset = $atts['preset'] ?? 'default';
         $layout_class = apply_filters('jankx_search_results_layout_class', "jankx-result-preset-{$preset}", $atts);
 
-        // Register action to render initial content
+        // Register actions to render initial content
         add_action('jankx_search_results_initial_render', [$this, 'initial_render_posts']);
+        add_action('jankx_search_render_pagination', [$this, 'render_pagination']);
 
         $content = $this->render_template('results', [
             'atts' => $atts,
@@ -23,37 +25,16 @@ class Results extends AbstractComponent
             'layout_class' => $layout_class,
         ]);
 
-        // Clean up action
+        // Clean up actions
         remove_action('jankx_search_results_initial_render', [$this, 'initial_render_posts']);
+        remove_action('jankx_search_render_pagination', [$this, 'render_pagination']);
 
         return $content;
     }
 
     public function initial_render_posts($atts)
     {
-        $post_types = [];
-        $all_post_types = get_post_types(['public' => true], 'names');
-
-        // 1. Check for individual checkboxes (New Checklist UI)
-        foreach ($all_post_types as $slug) {
-            $key = 'post_type_' . $slug;
-            if (isset($atts[$key]) && ($atts[$key] === 'true' || $atts[$key] === true)) {
-                $post_types[] = $slug;
-            }
-        }
-
-        // 2. Fallback to legacy attributes if no checkboxes are checked
-        if (empty($post_types)) {
-            $legacy = $atts['post_type'] ?? $atts['post_types'] ?? '';
-            if (!empty($legacy)) {
-                $post_types = is_string($legacy) ? explode(',', $legacy) : $legacy;
-            }
-        }
-
-        // 3. Default fallback
-        if (empty($post_types)) {
-            $post_types = 'post';
-        }
+        $post_types = $this->resolve_post_types($atts);
 
         $args = [
             'post_type' => $post_types,
@@ -82,6 +63,47 @@ class Results extends AbstractComponent
         } else {
             echo '<p class="no-results">' . __('No posts found.', 'jankx') . '</p>';
         }
+    }
+
+    public function render_pagination($atts)
+    {
+        if (isset($atts['show_pagination']) && ($atts['show_pagination'] === 'false' || $atts['show_pagination'] === false)) {
+            return;
+        }
+
+        // We need total posts for the initial render's pagination
+        // This is a bit redundant but necessary for the first page load
+        $post_types = $this->resolve_post_types($atts);
+        $args = [
+            'post_type' => $post_types,
+            'post_status' => 'publish',
+            'posts_per_page' => $atts['limit'] ?? 10,
+            'fields' => 'ids',
+        ];
+        $query = new \WP_Query($args);
+
+        if (function_exists('flatsome_pagination')) {
+            echo flatsome_pagination($query);
+        } else {
+            $handler = new \Jankx\SearchEngine\Ajax\Handler();
+            echo $handler->render_pagination_html($query->found_posts, $atts['limit'] ?? 10, 1, $atts);
+        }
+    }
+
+    protected function resolve_post_types($atts)
+    {
+        $post_types = [];
+        $all_post_types = get_post_types(['public' => true], 'names');
+        foreach ($all_post_types as $slug) {
+            if (isset($atts['post_type_' . $slug]) && ($atts['post_type_' . $slug] === 'true' || $atts['post_type_' . $slug] === true)) {
+                $post_types[] = $slug;
+            }
+        }
+        if (empty($post_types)) {
+            $legacy = $atts['post_type'] ?? $atts['post_types'] ?? '';
+            $post_types = !empty($legacy) ? (is_string($legacy) ? explode(',', $legacy) : $legacy) : 'post';
+        }
+        return $post_types;
     }
 
     protected function render_default_item($post)

@@ -117,6 +117,16 @@ class UXBuilder
                     'heading' => 'Show Featured Items',
                     'default' => 'true',
                 ),
+                'show_pagination' => array(
+                    'type' => 'checkbox',
+                    'heading' => 'Show Pagination',
+                    'default' => 'true',
+                ),
+                'limit' => array(
+                    'type' => 'textfield',
+                    'heading' => 'Posts Per Page',
+                    'default' => '10',
+                ),
             ) + $this->get_post_type_checklist_options() + array(
                 'preset' => array(
                     'type' => 'select',
