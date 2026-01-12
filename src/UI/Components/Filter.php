@@ -16,21 +16,18 @@ class Filter extends AbstractComponent
 
         foreach ($enabledTax as $key => $value) {
             $tax = str_replace('show_tax_', '', $key);
-            if (!isset($atts['terms_' . $tax])) {
-                $tax_data[$tax] = [
-                    'tax_obj' => get_taxonomy($tax),
-                    'terms' => [],
-                ];
-                continue;
+            $tax_args = [
+                'taxonomy' => $tax,
+                'hide_empty' => false,
+            ];
+
+            if (!empty($atts['terms_' . $tax])) {
+                $tax_args['include'] = explode(',', $atts['terms_' . $tax]);
             }
 
-            $taxIds = explode(',', $atts['terms_' . $tax]);
             $tax_data[$tax] = [
                 'tax_obj' => get_taxonomy($tax),
-                'terms' => get_terms([
-                    'taxonomy' => $tax,
-                    'include' => $taxIds,
-                ])
+                'terms' => get_terms($tax_args)
             ];
             $hasItems = true;
         }

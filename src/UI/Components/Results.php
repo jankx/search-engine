@@ -10,6 +10,7 @@ class Results extends AbstractComponent
         $atts = array_merge([
             'post_type_post' => 'true', // Default post type
             'show_pagination' => 'true', // Default pagination visibility
+            'show_featured' => 'true', // Default show featured
         ], $atts);
 
         $preset = $atts['preset'] ?? 'default';
@@ -18,6 +19,7 @@ class Results extends AbstractComponent
         // Register actions to render initial content
         add_action('jankx_search_results_initial_render', [$this, 'initial_render_posts']);
         add_action('jankx_search_render_pagination', [$this, 'render_pagination']);
+        add_action('jankx_search_render_featured', [$this, 'render_featured_results']);
 
         $content = $this->render_template('results', [
             'atts' => $atts,
@@ -28,8 +30,59 @@ class Results extends AbstractComponent
         // Clean up actions
         remove_action('jankx_search_results_initial_render', [$this, 'initial_render_posts']);
         remove_action('jankx_search_render_pagination', [$this, 'render_pagination']);
+        remove_action('jankx_search_render_featured', [$this, 'render_featured_results']);
 
         return $content;
+    }
+
+    public function render_featured_results($atts)
+    {
+        if (!isset($atts['show_featured']) || ($atts['show_featured'] === 'false' || $atts['show_featured'] === false)) {
+            return;
+        }
+
+        $post_types = $this->resolve_post_types($atts);
+        $args = [
+            'post_type' => $post_types,
+            'posts_per_page' => 2,
+            'meta_query' => [
+                [
+                    'key' => '_is_featured',
+                    'value' => 'yes',
+                    'compare' => '='
+                ]
+            ]
+        ];
+
+        $query = new \WP_Query($args);
+
+        if ($query->have_posts()) {
+            echo '<div class="jankx-featured-items">';
+            while ($query->have_posts()) {
+                $query->the_post();
+                $post = get_post();
+                ?>
+                <div class="featured-item">
+                    <div class="result-image">
+                        <div class="featured-badge">
+                            <i class="icon-star"></i> Featured
+                        </div>
+                        <?php if (has_post_thumbnail()): ?>
+                            <a href="<?php the_permalink(); ?>"><?php the_post_thumbnail('large'); ?></a>
+                        <?php endif; ?>
+                    </div>
+                    <div class="result-content">
+                        <span class="result-label"><?php echo strtoupper(get_post_type()); ?></span>
+                        <h3 class="result-title">
+                            <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                        </h3>
+                    </div>
+                </div>
+                <?php
+            }
+            echo '</div>';
+            wp_reset_postdata();
+        }
     }
 
     public function initial_render_posts($atts)
@@ -111,8 +164,17 @@ class Results extends AbstractComponent
         // Simple fallback default item if no filter hooks it
         ?>
         <div class="result-item default-fallback">
-            <h3 class="result-title"><a href="<?php echo get_permalink($post); ?>"><?php echo get_the_title($post); ?></a></h3>
-            <div class="result-excerpt"><?php echo wp_trim_words(get_the_excerpt($post), 20); ?></div>
+            <div class="result-image">
+                <?php if (has_post_thumbnail($post)): ?>
+                    <a href="<?php echo get_permalink($post); ?>"><?php echo get_the_post_thumbnail($post, 'medium'); ?></a>
+                <?php endif; ?>
+            </div>
+            <div class="result-content">
+                <span class="result-label"><?php echo strtoupper(get_post_type($post)); ?></span>
+                <h3 class="result-title"><a href="<?php echo get_permalink($post); ?>"><?php echo get_the_title($post); ?></a>
+                </h3>
+                <div class="result-excerpt"><?php echo wp_trim_words(get_the_excerpt($post), 20); ?></div>
+            </div>
         </div>
         <?php
     }

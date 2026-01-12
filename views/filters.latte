@@ -1,17 +1,23 @@
 <div class="jankx-search-filters filter-group" data-settings="{$atts|json}" n:if="$has_items">
-    <h4 class="filter-title">
-        {$atts['title'] ?? (reset($tax_data)['tax_obj']->label)}
+    <h4 class="filter-title" n:if="!empty($atts['title'])">
+        {$atts['title']}
     </h4>
-    <ul class="filter-list">
-        {foreach $tax_data as $taxonomy => $data}
-            <li n:foreach="$data['terms'] as $term">
-                <label>
-                    <input type="checkbox" name="filter[{$taxonomy}][]" value="{$term->term_id}">
-                    <span class="term-name">{$term->name}</span>
-                    <span class="term-count">({$term->count})</span>
-                </label>
-            </li>
-        {/foreach}
-    </ul>
+    
+    {foreach $tax_data as $taxonomy => $data}
+        <div class="filter-section">
+            <h5 class="taxonomy-title" n:if="count($tax_data) > 1">{$data['tax_obj']->label}</h5>
+            <ul class="filter-list">
+                <li n:foreach="$data['terms'] as $term">
+                    <label>
+                        <span class="term-label-text">
+                            <input type="checkbox" name="filter[{$taxonomy}][]" value="{$term->term_id}">
+                            <span class="term-name">{$term->name|stripHtml}</span>
+                        </span>
+                        <span class="term-count">({$term->count})</span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+    {/foreach}
 </div>
 

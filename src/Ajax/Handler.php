@@ -102,7 +102,7 @@ class Handler
                 </div>
             <?php endif; ?>
             <div class="result-content">
-                <span class="result-label"><?php echo get_post_type($post); ?></span>
+                <span class="result-label"><?php echo strtoupper(get_post_type($post)); ?></span>
                 <h3 class="result-title">
                     <a href="<?php echo get_permalink($post); ?>"><?php echo get_the_title($post); ?></a>
                 </h3>
