@@ -34,7 +34,9 @@ class TNTSearchEngine extends AbstractEngine
         $index_name = $this->getConfig('index', 'resources.index');
         $storage = $this->tnt->config['storage'];
 
-        if (!file_exists($storage . $index_name)) {
+        // Check index existence only if we have keywords to search
+        $has_index = file_exists($storage . $index_name);
+        if (!empty($keywords) && !$has_index) {
             return [
                 'results' => [],
                 'total' => 0,
@@ -42,34 +44,88 @@ class TNTSearchEngine extends AbstractEngine
             ];
         }
 
-        $this->tnt->selectIndex($index_name);
+        if ($has_index) {
+            $this->tnt->selectIndex($index_name);
+        }
 
         $limit = $args['limit'] ?? 10;
         $page = $args['page'] ?? 1;
         $offset = ($page - 1) * $limit;
 
         // Get up to 500 results to allow for pagination in MVP
-        $res = $this->tnt->search($keywords, 500);
-        $ids = $res['ids'] ?? [];
+        $ids = [];
+        $res = ['execution_time' => 0];
+        if (!empty($keywords)) {
+            $res = $this->tnt->search($keywords, 500);
+            $ids = $res['ids'] ?? [];
+        }
 
-        // Filter by Post Types if specified
+        // 1. Build query arguments for WP filtering
+        $query_args = [
+            'fields' => 'ids',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+        ];
+
+        // If we have search results, we want to restrict to those and keep order
+        if (!empty($ids)) {
+            $query_args['post__in'] = $ids;
+            $query_args['orderby'] = 'post__in';
+        }
+
+        $perform_wp_filter = false;
+
+        // Filter by Post Types
         if (!empty($args['post_types'])) {
             $post_types = is_string($args['post_types']) ? explode(',', $args['post_types']) : $args['post_types'];
-
-            // Allow 'any' or empty to mean all
             if (!empty($post_types) && !in_array('any', $post_types)) {
-                $filtered_ids = get_posts([
-                    'post_type' => $post_types,
-                    'post__in' => $ids,
-                    'fields' => 'ids',
-                    'posts_per_page' => -1,
-                    // Preserve order if possible, though get_posts might confuse it. 
-                    // TNT results are sorted by relevance. We should intersect.
-                    'orderby' => 'post__in',
-                ]);
+                $query_args['post_type'] = $post_types;
+                $perform_wp_filter = true;
+            }
+        } else {
+            $query_args['post_type'] = 'any';
+        }
 
+        // Filter by Taxonomies (Checkboxes values are now term IDs)
+        if (!empty($args['filters'])) {
+            $tax_query = [];
+            foreach ($args['filters'] as $taxonomy => $terms) {
+                if (empty($terms))
+                    continue;
+                $tax_query[] = [
+                    'taxonomy' => $taxonomy,
+                    'field' => 'term_id',
+                    'terms' => (array) $terms,
+                    'operator' => 'IN',
+                ];
+            }
+
+            if (!empty($tax_query)) {
+                if (count($tax_query) > 1) {
+                    $tax_query['relation'] = 'AND';
+                }
+                $query_args['tax_query'] = $tax_query;
+                $perform_wp_filter = true;
+            }
+        }
+
+        // If keywords are empty, we MUST perform a WP filter to get some results (e.g. current selected category)
+        if (empty($keywords)) {
+            $perform_wp_filter = true;
+            // When keywords are empty, we might want to sort by date by default
+            if (!isset($query_args['orderby'])) {
+                $query_args['orderby'] = 'date';
+                $query_args['order'] = 'DESC';
+            }
+        }
+
+        if ($perform_wp_filter) {
+            $filtered_ids = get_posts($query_args);
+            if (!empty($ids)) {
                 // Intersect to keep TNT's order (relevance)
                 $ids = array_values(array_intersect($ids, $filtered_ids));
+            } else {
+                $ids = $filtered_ids;
             }
         }
 

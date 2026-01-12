@@ -27,12 +27,28 @@ class Handler
             // Config from WP options could go here
         ]);
 
+        // Resolve Post Types from state (look for post_type_{slug} flags)
+        $post_types = [];
+        $all_post_types = get_post_types(['public' => true], 'names');
+        foreach ($all_post_types as $slug) {
+            $key = 'post_type_' . $slug;
+            if (isset($state[$key]) && ($state[$key] === 'true' || $state[$key] === true)) {
+                $post_types[] = $slug;
+            }
+        }
+        if (empty($post_types)) {
+            $legacy = $state['post_type'] ?? $state['post_types'] ?? '';
+            if (!empty($legacy)) {
+                $post_types = is_string($legacy) ? explode(',', $legacy) : $legacy;
+            }
+        }
+
         $results = $engine->search($keywords, [
             'filters' => $filters,
             'sort' => $sort,
             'limit' => 10,
             'page' => $state['page'] ?? 1,
-            'post_types' => $state['post_types'] ?? [],
+            'post_types' => $post_types,
         ]);
 
         // Render results using the current state (includes presets)

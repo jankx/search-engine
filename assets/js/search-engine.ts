@@ -65,11 +65,10 @@ class JankxSearchHub {
         // Filters
         document.addEventListener('change', (e) => {
             const target = e.target as HTMLInputElement;
-            if (target.matches('.jankx-search-filter input[type="checkbox"]')) {
-                const filterContainer = target.closest('.jankx-search-filter') as HTMLElement;
-                const taxonomyMatch = filterContainer.className.match(/filter-([^\s]+)/);
-                if (taxonomyMatch) {
-                    const taxonomy = taxonomyMatch[1];
+            if (target.matches('.jankx-search-filters input[type="checkbox"]')) {
+                const nameMatch = target.name.match(/filter\[([^\]]+)\]/);
+                if (nameMatch) {
+                    const taxonomy = nameMatch[1];
                     if (!this.state.filters[taxonomy]) {
                         this.state.filters[taxonomy] = [];
                     }
@@ -135,7 +134,21 @@ class JankxSearchHub {
         const formData = new FormData();
         formData.append('action', 'jankx_search_query');
         formData.append('nonce', jankx_search_config.nonce);
-        formData.append('state', JSON.stringify({ ...this.settings, ...this.state }));
+        // Explicitly resolve post types array from individual settings (post_type_{slug})
+        const activePostTypes: string[] = [];
+        Object.keys(this.settings).forEach(key => {
+            if (key.startsWith('post_type_') && (this.settings[key] === 'true' || this.settings[key] === true)) {
+                activePostTypes.push(key.replace('post_type_', ''));
+            }
+        });
+
+        const fullState = {
+            ...this.settings,
+            ...this.state,
+            post_types: activePostTypes
+        };
+
+        formData.append('state', JSON.stringify(fullState));
 
         try {
             const response = await fetch(jankx_search_config.ajax_url, {

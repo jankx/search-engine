@@ -6,7 +6,7 @@
         {foreach $tax_data as $taxonomy => $data}
             <li n:foreach="$data['terms'] as $term">
                 <label>
-                    <input type="checkbox" name="filter[{$taxonomy}][]" value="{$term->slug}">
+                    <input type="checkbox" name="filter[{$taxonomy}][]" value="{$term->term_id}">
                     <span class="term-name">{$term->name}</span>
                     <span class="term-count">({$term->count})</span>
                 </label>
