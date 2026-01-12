@@ -31,7 +31,7 @@
 /* Sidebar Box (Card style) */
 .filter-group {
     background: var(--jankx-search-bg);
-    border: 1px solid var(--jankx-search-border);
+    border: 2px solid var(--jankx-search-border);
     padding: 20px;
     margin-bottom: 25px;
     border-radius: var(--jankx-search-radius);
@@ -108,17 +108,16 @@
 
 .search-bar-wrapper {
     display: flex;
-    border: 1px solid #ddd;
-    border-radius: 0;
-    overflow: hidden;
+    gap: 0;
     height: 48px;
-    background: #fff;
-    box-shadow: none;
+    background: transparent;
+    border: none;
 }
 
 .search-bar-wrapper .search-input {
     flex-grow: 1;
-    border: none !important;
+    border: 2px solid #ddd !important;
+    border-right: none !important;
     padding: 0 15px !important;
     font-size: 1rem;
     outline: none;
@@ -126,26 +125,29 @@
     margin: 0 !important;
     box-shadow: none !important;
     background: #fff !important;
+    border-radius: 0;
 }
 
 .search-bar-wrapper .search-btn {
     background-color: var(--jankx-search-primary);
     color: white;
-    border: none;
+    border: 2px solid var(--jankx-search-primary);
     width: 48px;
     height: 48px;
     flex-shrink: 0;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 !important;
     padding: 0 !important;
+    border-radius: 0;
 }
 
 .search-bar-wrapper .search-btn:hover {
     background-color: #0050a0;
+    border-color: #0050a0;
 }
 
 .search-bar-wrapper .search-btn i {
@@ -172,7 +174,7 @@
 .jankx-search-sorter .sort-select {
     height: 48px !important;
     padding: 0 35px 0 15px !important;
-    border: 1px solid #ddd !important;
+    border: 2px solid #ddd !important;
     border-radius: 0 !important;
     background-color: white !important;
     cursor: pointer;

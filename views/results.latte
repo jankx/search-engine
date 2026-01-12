@@ -1,6 +1,6 @@
 <div class="jankx-search-results-container" data-settings="{$atts|json}">
     {* Featured Section if enabled *}
-    <div n:if="!empty($atts['show_featured']) && ($atts['show_featured'] === 'true' || $atts['show_featured'] === true)" class="featured-results row">
+    <div n:if="!empty($atts['show_featured']) && ($atts['show_featured'] === 'true' || $atts['show_featured'] === true)" class="featured-results">
         {do do_action('jankx_search_render_featured', $atts)}
     </div>
 

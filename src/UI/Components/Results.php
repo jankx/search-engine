@@ -185,12 +185,22 @@ class Results extends AbstractComponent
         $taxonomies = get_object_taxonomies($post_type, 'names');
 
         // Priority taxonomies
-        $priority_taxonomies = ['category', 'product_cat', 'topic'];
+        $priority_taxonomies = ['category', 'product_cat', 'featured_item_category', 'topic'];
         $best_tax = '';
         foreach ($priority_taxonomies as $tax) {
             if (in_array($tax, $taxonomies)) {
                 $best_tax = $tax;
                 break;
+            }
+        }
+
+        // If no priority tax found, look for something ending in _category or _cat
+        if (!$best_tax) {
+            foreach ($taxonomies as $tax) {
+                if (str_ends_with($tax, '_category') || str_ends_with($tax, '_cat')) {
+                    $best_tax = $tax;
+                    break;
+                }
             }
         }
 

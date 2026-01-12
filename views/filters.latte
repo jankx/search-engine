@@ -5,7 +5,6 @@
     
     {foreach $tax_data as $taxonomy => $data}
         <div class="filter-section">
-            <h5 class="taxonomy-title" n:if="count($tax_data) > 1">{$data['tax_obj']->label}</h5>
             <ul class="filter-list">
                 <li n:foreach="$data['terms'] as $term">
                     <label>
