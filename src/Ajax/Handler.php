@@ -102,7 +102,7 @@ class Handler
                 </div>
             <?php endif; ?>
             <div class="result-content">
-                <span class="result-label"><?php echo strtoupper(get_post_type($post)); ?></span>
+                <span class="result-label"><?php echo esc_html(strtoupper($this->get_post_label($post))); ?></span>
                 <h3 class="result-title">
                     <a href="<?php echo get_permalink($post); ?>"><?php echo get_the_title($post); ?></a>
                 </h3>
@@ -112,6 +112,35 @@ class Handler
             </div>
         </div>
         <?php
+    }
+
+    protected function get_post_label($post)
+    {
+        $post_type = get_post_type($post);
+        $taxonomies = get_object_taxonomies($post_type, 'names');
+
+        // Priority taxonomies
+        $priority_taxonomies = ['category', 'product_cat', 'topic'];
+        $best_tax = '';
+        foreach ($priority_taxonomies as $tax) {
+            if (in_array($tax, $taxonomies)) {
+                $best_tax = $tax;
+                break;
+            }
+        }
+
+        if (!$best_tax && !empty($taxonomies)) {
+            $best_tax = $taxonomies[0];
+        }
+
+        if ($best_tax) {
+            $terms = get_the_terms($post, $best_tax);
+            if (!empty($terms) && !is_wp_error($terms)) {
+                return $terms[0]->name;
+            }
+        }
+
+        return get_post_type_object($post_type)->labels->singular_name;
     }
 
     public function render_pagination_html($total, $limit, $current_page, $state = [])

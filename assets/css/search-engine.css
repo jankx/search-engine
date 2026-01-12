@@ -103,34 +103,45 @@
 
 /* Search Bar Styling */
 .jankx-search-keyword {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .search-bar-wrapper {
     display: flex;
-    border: 1px solid var(--jankx-search-border);
-    border-radius: var(--jankx-search-radius);
+    border: 1px solid #ddd;
+    border-radius: 0;
     overflow: hidden;
+    height: 48px;
+    background: #fff;
+    box-shadow: none;
 }
 
 .search-bar-wrapper .search-input {
     flex-grow: 1;
-    border: none;
-    padding: 12px 15px;
+    border: none !important;
+    padding: 0 15px !important;
     font-size: 1rem;
     outline: none;
+    height: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
 }
 
 .search-bar-wrapper .search-btn {
     background-color: var(--jankx-search-primary);
     color: white;
     border: none;
-    padding: 0 20px;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
     cursor: pointer;
     transition: background 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .search-bar-wrapper .search-btn:hover {
@@ -138,26 +149,42 @@
 }
 
 .search-bar-wrapper .search-btn i {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
 }
 
 /* Sorting Section */
 .jankx-search-sorter {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     justify-content: flex-end;
     margin-bottom: 20px;
-    font-size: 0.9rem;
+    font-size: 1rem;
+    height: 48px;
+}
+
+.jankx-search-sorter span {
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
 }
 
 .jankx-search-sorter .sort-select {
-    padding: 8px 30px 8px 12px;
-    border: 1px solid var(--jankx-search-border);
-    border-radius: var(--jankx-search-radius);
-    background-color: white;
+    height: 48px !important;
+    padding: 0 35px 0 15px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 0 !important;
+    background-color: white !important;
     cursor: pointer;
     font-weight: 500;
+    margin: 0 !important;
+    box-shadow: none !important;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
 }
 
 /* Result Items */
@@ -165,7 +192,7 @@
     display: flex;
     gap: 25px;
     padding: 30px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: none;
 }
 
 /* Featured Badges */
@@ -241,6 +268,8 @@
     grid-template-columns: 1fr 1fr;
     gap: 25px;
     margin-bottom: 40px;
+    padding-bottom: 40px;
+    border-bottom: 3px solid #eee;
 }
 
 .featured-item {
