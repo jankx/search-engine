@@ -50,12 +50,34 @@ class TNTSearchEngine extends AbstractEngine
 
         // Get up to 500 results to allow for pagination in MVP
         $res = $this->tnt->search($keywords, 500);
+        $ids = $res['ids'] ?? [];
 
-        $total = $res['hits'] ?? 0;
-        $ids = array_slice($res['ids'] ?? [], $offset, $limit);
+        // Filter by Post Types if specified
+        if (!empty($args['post_types'])) {
+            $post_types = is_string($args['post_types']) ? explode(',', $args['post_types']) : $args['post_types'];
+
+            // Allow 'any' or empty to mean all
+            if (!empty($post_types) && !in_array('any', $post_types)) {
+                $filtered_ids = get_posts([
+                    'post_type' => $post_types,
+                    'post__in' => $ids,
+                    'fields' => 'ids',
+                    'posts_per_page' => -1,
+                    // Preserve order if possible, though get_posts might confuse it. 
+                    // TNT results are sorted by relevance. We should intersect.
+                    'orderby' => 'post__in',
+                ]);
+
+                // Intersect to keep TNT's order (relevance)
+                $ids = array_values(array_intersect($ids, $filtered_ids));
+            }
+        }
+
+        $total = count($ids);
+        $paged_ids = array_slice($ids, $offset, $limit);
 
         return [
-            'results' => $ids,
+            'results' => $paged_ids,
             'total' => $total,
             'time' => $res['execution_time'] ?? 0,
         ];

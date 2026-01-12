@@ -32,7 +32,7 @@ class Handler
             'sort' => $sort,
             'limit' => 10,
             'page' => $state['page'] ?? 1,
-            'post_types' => $state['post_types'] ?? ['post', 'featured_item'],
+            'post_types' => $state['post_types'] ?? [],
         ]);
 
         // Render results using the current state (includes presets)

@@ -44,25 +44,43 @@ class UXBuilder
         ));
 
         // 2. Filter Element
+        $filter_options = array(
+            'title' => array(
+                'type' => 'textfield',
+                'heading' => 'Filter Title',
+            ),
+            'taxonomy' => array(
+                'type' => 'select',
+                'heading' => 'Taxonomy',
+                'options' => $this->get_taxonomies_options(),
+                'config' => array(
+                    'multiple' => true,
+                    'placeholder' => 'Select taxonomies to show...',
+                ),
+            ),
+        );
+
+        // Add dynamic term selectors for each taxonomy
+        $taxonomies = get_taxonomies(['public' => true], 'objects');
+        foreach ($taxonomies as $slug => $tax) {
+            $filter_options['terms_' . $slug] = array(
+                'type' => 'select',
+                'heading' => sprintf('Select %s', $tax->label),
+                'config' => array(
+                    'multiple' => true,
+                    'placeholder' => 'Select terms to show...',
+                ),
+                'options' => $this->get_terms_options($slug),
+                'conditions' => 'taxonomy === "' . $slug . '"',
+            );
+        }
+
         add_ux_builder_shortcode('jankx_search_filter', array(
             'name' => __('Search Filter', 'jankx'),
             'category' => $category,
             'scripts' => $scripts,
             'styles' => $styles,
-            'options' => array(
-                'title' => array(
-                    'type' => 'textfield',
-                    'heading' => 'Filter Title',
-                ),
-                'taxonomy' => array(
-                    'type' => 'select',
-                    'heading' => 'Taxonomy',
-                    'options' => array(
-                        'thought_leader' => 'Authors',
-                        'industry' => 'Industries',
-                    ),
-                ),
-            ),
+            'options' => $filter_options,
         ));
 
         // 3. Sorter Element
@@ -91,6 +109,16 @@ class UXBuilder
                     'type' => 'checkbox',
                     'heading' => 'Show Featured Items',
                     'default' => 'true',
+                ),
+                'post_types' => array(
+                    'type' => 'select',
+                    'heading' => 'Post Types',
+                    'default' => '',
+                    'options' => $this->get_post_types_options(),
+                    'config' => array(
+                        'multiple' => true,
+                        'placeholder' => 'Select...',
+                    ),
                 ),
                 'preset' => array(
                     'type' => 'select',
@@ -130,5 +158,43 @@ class UXBuilder
     public function render_results($atts)
     {
         return (new \Jankx\SearchEngine\UI\Components\Results())->render($atts);
+    }
+
+    protected function get_post_types_options()
+    {
+        $post_types = get_post_types(['public' => true], 'objects');
+        $options = [];
+        foreach ($post_types as $slug => $pt) {
+            $options[$slug] = $pt->label;
+        }
+        return $options;
+    }
+
+    protected function get_taxonomies_options()
+    {
+        $taxonomies = get_taxonomies(['public' => true], 'objects');
+        $options = [];
+        foreach ($taxonomies as $slug => $tax) {
+            $options[$slug] = sprintf('%s (%s)', $tax->label, $slug);
+        }
+        return $options;
+    }
+
+    protected function get_terms_options($taxonomy)
+    {
+        $terms = get_terms([
+            'taxonomy' => $taxonomy,
+            'hide_empty' => false,
+        ]);
+
+        if (is_wp_error($terms)) {
+            return [];
+        }
+
+        $options = [];
+        foreach ($terms as $term) {
+            $options[$term->slug] = $term->name;
+        }
+        return $options;
     }
 }
