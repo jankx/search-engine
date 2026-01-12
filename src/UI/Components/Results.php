@@ -27,12 +27,28 @@ class Results extends AbstractComponent
 
     public function initial_render_posts($atts)
     {
-        $post_types = $atts['post_types'] ?? 'post';
-        if (empty($post_types)) {
-            $post_types = 'any';
+        $post_types = [];
+        $all_post_types = get_post_types(['public' => true], 'names');
+
+        // 1. Check for individual checkboxes (New Checklist UI)
+        foreach ($all_post_types as $slug) {
+            $key = 'post_type_' . $slug;
+            if (isset($atts[$key]) && ($atts[$key] === 'true' || $atts[$key] === true)) {
+                $post_types[] = $slug;
+            }
         }
-        if (is_string($post_types) && strpos($post_types, ',') !== false) {
-            $post_types = explode(',', $post_types);
+
+        // 2. Fallback to legacy attributes if no checkboxes are checked
+        if (empty($post_types)) {
+            $legacy = $atts['post_type'] ?? $atts['post_types'] ?? '';
+            if (!empty($legacy)) {
+                $post_types = is_string($legacy) ? explode(',', $legacy) : $legacy;
+            }
+        }
+
+        // 3. Default fallback
+        if (empty($post_types)) {
+            $post_types = 'post';
         }
 
         $args = [
@@ -68,10 +84,10 @@ class Results extends AbstractComponent
     {
         // Simple fallback default item if no filter hooks it
         ?>
-                <div class="result-item default-fallback">
-                     <h3 class="result-title"><a href="<?php echo get_permalink($post); ?>"><?php echo get_the_title($post); ?></a></h3>
-                     <div class="result-excerpt"><?php echo wp_trim_words(get_the_excerpt($post), 20); ?></div>
-                </div>
-                <?php
+        <div class="result-item default-fallback">
+            <h3 class="result-title"><a href="<?php echo get_permalink($post); ?>"><?php echo get_the_title($post); ?></a></h3>
+            <div class="result-excerpt"><?php echo wp_trim_words(get_the_excerpt($post), 20); ?></div>
+        </div>
+        <?php
     }
 }

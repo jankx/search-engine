@@ -7,37 +7,37 @@ class Filter extends AbstractComponent
 
     public function render($atts = [])
     {
-        $taxonomy = $atts['taxonomy'] ?? 'category';
-        $tax_obj = get_taxonomy($taxonomy);
+        $enabledTax = array_filter($atts, function ($value, $key) {
+            return strpos($key, 'show_tax_') === 0 && $value === 'true';
+        }, ARRAY_FILTER_USE_BOTH);
 
-        if (!$tax_obj) {
-            return '';
-        }
+        $tax_data = [];
+        $hasItems = false;
 
-        $args = [
-            'taxonomy' => $taxonomy,
-            'hide_empty' => $atts['hide_empty'] ?? false,
-        ];
-
-        // Check if specific terms are selected in UX Builder options
-        // UX Builder saves dynamic options as keys like 'terms_category', 'terms_post_tag'
-        $selected_terms_key = 'terms_' . $taxonomy;
-        if (!empty($atts[$selected_terms_key])) {
-            $selected_slugs = $atts[$selected_terms_key];
-            if (is_string($selected_slugs)) {
-                $selected_slugs = explode(',', $selected_slugs);
+        foreach ($enabledTax as $key => $value) {
+            $tax = str_replace('show_tax_', '', $key);
+            if (!isset($atts['terms_' . $tax])) {
+                $tax_data[$tax] = [
+                    'tax_obj' => get_taxonomy($tax),
+                    'terms' => [],
+                ];
+                continue;
             }
-            $args['slug'] = $selected_slugs;
-            $args['orderby'] = 'slug__in'; // Preserve selection order if needed, or stick to name
+
+            $taxIds = explode(',', $atts['terms_' . $tax]);
+            $tax_data[$tax] = [
+                'tax_obj' => get_taxonomy($tax),
+                'terms' => get_terms([
+                    'taxonomy' => $tax,
+                    'include' => $taxIds,
+                ])
+            ];
+            $hasItems = true;
         }
-
-        $terms = get_terms($args);
-
-        return $this->render_template('filter', [
-            'taxonomy' => $taxonomy,
-            'tax_obj' => $tax_obj,
-            'terms' => $terms,
+        return $this->render_template('filters', [
+            'tax_data' => $tax_data,
             'atts' => $atts,
+            'has_items' => $hasItems,
         ]);
     }
 }

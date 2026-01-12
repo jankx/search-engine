@@ -49,29 +49,36 @@ class UXBuilder
                 'type' => 'textfield',
                 'heading' => 'Filter Title',
             ),
-            'taxonomy' => array(
-                'type' => 'select',
-                'heading' => 'Taxonomy',
-                'options' => $this->get_taxonomies_options(),
-                'config' => array(
-                    'multiple' => true,
-                    'placeholder' => 'Select taxonomies to show...',
-                ),
-            ),
         );
 
-        // Add dynamic term selectors for each taxonomy
+        // Add checkboxes and term selectors for each taxonomy
         $taxonomies = get_taxonomies(['public' => true], 'objects');
         foreach ($taxonomies as $slug => $tax) {
+            // Checkbox to enable this taxonomy
+            $filter_options['show_tax_' . $slug] = array(
+                'type' => 'checkbox',
+                'heading' => sprintf('Show %s', $tax->label),
+                'default' => 'false',
+            );
+
+            // Term selector for this taxonomy
             $filter_options['terms_' . $slug] = array(
                 'type' => 'select',
-                'heading' => sprintf('Select %s', $tax->label),
+                'heading' => sprintf('Select %s Terms', $tax->label),
+                'param_name' => 'terms_' . $slug,
+                'full_width' => true,
+                'size' => 10,
+                'style' => 'height: 200px;',
+                'default' => '',
+                // 'options' => $this->get_terms_options($slug),
+                'conditions' => 'show_tax_' . $slug . ' == "true"',
                 'config' => array(
                     'multiple' => true,
-                    'placeholder' => 'Select terms to show...',
+                    'termSelect' => array(
+                        // 'post_type' => 'product_cat',
+                        'taxonomies' => $tax->name
+                    ),
                 ),
-                'options' => $this->get_terms_options($slug),
-                'conditions' => 'taxonomy === "' . $slug . '"',
             );
         }
 
@@ -110,15 +117,10 @@ class UXBuilder
                     'heading' => 'Show Featured Items',
                     'default' => 'true',
                 ),
-                'post_types' => array(
-                    'type' => 'select',
-                    'heading' => 'Post Types',
-                    'default' => '',
-                    'options' => $this->get_post_types_options(),
-                    'config' => array(
-                        'multiple' => true,
-                        'placeholder' => 'Select...',
-                    ),
+                'post_types_group' => array(
+                    'type' => 'group',
+                    'heading' => 'Post Types Checklist',
+                    'options' => $this->get_post_type_checklist_options(),
                 ),
                 'preset' => array(
                     'type' => 'select',
@@ -166,6 +168,20 @@ class UXBuilder
         $options = [];
         foreach ($post_types as $slug => $pt) {
             $options[$slug] = $pt->label;
+        }
+        return $options;
+    }
+
+    protected function get_post_type_checklist_options()
+    {
+        $post_types = get_post_types(['public' => true], 'objects');
+        $options = [];
+        foreach ($post_types as $slug => $pt) {
+            $options['post_type_' . $slug] = array(
+                'type' => 'checkbox',
+                'heading' => $pt->label,
+                'default' => $slug === 'post' ? 'true' : 'false',
+            );
         }
         return $options;
     }
