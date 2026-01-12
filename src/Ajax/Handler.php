@@ -134,26 +134,33 @@ class Handler
 
         ob_start();
         ?>
-        <nav class="pagination-nav">
-            <ul class="pagination-list">
-                <?php if ($current_page > 1): ?>
-                    <li><a href="#" class="page-numbers" data-page="<?php echo $current_page - 1; ?>">&laquo; Previous</a></li>
-                <?php endif; ?>
+        <ul class="page-numbers nav-pagination links text-center">
+            <?php if ($current_page > 1): ?>
+                <li>
+                    <a href="#" class="prev page-number" data-page="<?php echo $current_page - 1; ?>">
+                        <i class="icon-angle-left"></i>
+                    </a>
+                </li>
+            <?php endif; ?>
 
-                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                    <li>
-                        <a href="#" class="page-numbers <?php echo ($i == $current_page) ? 'current' : ''; ?>"
-                            data-page="<?php echo $i; ?>">
-                            <?php echo $i; ?>
-                        </a>
-                    </li>
-                <?php endfor; ?>
+            <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                <li>
+                    <?php if ($i == $current_page): ?>
+                        <span aria-current="page" class="page-number current"><?php echo $i; ?></span>
+                    <?php else: ?>
+                        <a href="#" class="page-number" data-page="<?php echo $i; ?>"><?php echo $i; ?></a>
+                    <?php endif; ?>
+                </li>
+            <?php endfor; ?>
 
-                <?php if ($current_page < $total_pages): ?>
-                    <li><a href="#" class="page-numbers" data-page="<?php echo $current_page + 1; ?>">Next &raquo;</a></li>
-                <?php endif; ?>
-            </ul>
-        </nav>
+            <?php if ($current_page < $total_pages): ?>
+                <li>
+                    <a href="#" class="next page-number" data-page="<?php echo $current_page + 1; ?>">
+                        <i class="icon-angle-right"></i>
+                    </a>
+                </li>
+            <?php endif; ?>
+        </ul>
         <?php
         return ob_get_clean();
     }

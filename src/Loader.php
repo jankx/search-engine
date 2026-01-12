@@ -121,14 +121,14 @@ class Loader
             'jankx-search-engine',
             content_url('plugins/akselos-customizer/vendor/jankx/search-engine/assets/css/search-engine.css'),
             array(),
-            '1.0.0'
+            SearchEngine::VERSION
         );
 
         wp_enqueue_script(
             'jankx-search-engine',
             content_url('plugins/akselos-customizer/vendor/jankx/search-engine/assets/js/search-engine.js'),
             array(),
-            '1.0.0',
+            SearchEngine::VERSION,
             true
         );
 

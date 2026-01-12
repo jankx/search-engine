@@ -27,7 +27,7 @@ class JankxSearchHub {
 
     constructor() {
         this.$results = document.querySelector('.jankx-search-results-container .results-grid');
-        this.$pagination = document.querySelector('.search-pagination');
+        this.$pagination = document.querySelector('.pagination-container');
         this.init();
     }
 
@@ -111,7 +111,7 @@ class JankxSearchHub {
         // Pagination
         document.addEventListener('click', (e) => {
             const target = e.target as HTMLElement;
-            const paginationLink = target.closest('.search-pagination .page-numbers') as HTMLElement;
+            const paginationLink = target.closest('.pagination-container .page-number') as HTMLElement;
             if (paginationLink) {
                 e.preventDefault();
                 const pageNum = paginationLink.getAttribute('data-page');

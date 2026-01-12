@@ -156,3 +156,7 @@
     height: 14px;
     margin-bottom: 12px;
 }
+
+.jankx-search-results-container ul.links.page-numbers li {
+    margin-top: 8px;
+}

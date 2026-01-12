@@ -6,6 +6,8 @@ use Jankx\SearchEngine\Engines\TNTSearchEngine;
 
 class SearchEngine
 {
+    const VERSION = '1.0.1';
+
     protected static $instance;
     protected $driver;
     protected $config;

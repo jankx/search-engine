@@ -10,7 +10,7 @@
         </div>
     </div>
 
-    <div n:if="!empty($atts['show_pagination']) && ($atts['show_pagination'] === 'true' || $atts['show_pagination'] === true)" class="search-pagination">
+    <div n:if="!empty($atts['show_pagination']) && ($atts['show_pagination'] === 'true' || $atts['show_pagination'] === true)" class="container pagination-container">
         {do do_action('jankx_search_render_pagination', $atts)}
     </div>
 </div>
