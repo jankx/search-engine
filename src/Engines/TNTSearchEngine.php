@@ -119,11 +119,42 @@ class TNTSearchEngine extends AbstractEngine
             }
         }
 
+        // 2. Resolve Sorting logic
+        $sort = $args['sort'] ?? 'relevance';
+        switch ($sort) {
+            case 'date_desc':
+                $query_args['orderby'] = 'date';
+                $query_args['order'] = 'DESC';
+                break;
+            case 'date_asc':
+                $query_args['orderby'] = 'date';
+                $query_args['order'] = 'ASC';
+                break;
+            case 'alphabetical':
+                $query_args['orderby'] = 'title';
+                $query_args['order'] = 'ASC';
+                break;
+            case 'relevance':
+            default:
+                if (!empty($ids)) {
+                    $query_args['orderby'] = 'post__in';
+                } else {
+                    $query_args['orderby'] = 'date';
+                    $query_args['order'] = 'DESC';
+                }
+                break;
+        }
+
         if ($perform_wp_filter) {
             $filtered_ids = get_posts($query_args);
             if (!empty($ids)) {
-                // Intersect to keep TNT's order (relevance)
-                $ids = array_values(array_intersect($ids, $filtered_ids));
+                // If sorting by relevance, we must intersect to keep TNT's order
+                if ($sort === 'relevance') {
+                    $ids = array_values(array_intersect($ids, $filtered_ids));
+                } else {
+                    // Otherwise, the order from get_posts (WP_Query) is what we want
+                    $ids = $filtered_ids;
+                }
             } else {
                 $ids = $filtered_ids;
             }

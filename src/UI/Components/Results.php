@@ -7,6 +7,10 @@ class Results extends AbstractComponent
 
     public function render($atts = [])
     {
+        $atts = array_merge([
+            'post_type_post' => 'true', // Default post type
+        ], $atts);
+
         $preset = $atts['preset'] ?? 'default';
         $layout_class = apply_filters('jankx_search_results_layout_class', "jankx-result-preset-{$preset}", $atts);
 

@@ -117,11 +117,7 @@ class UXBuilder
                     'heading' => 'Show Featured Items',
                     'default' => 'true',
                 ),
-                'post_types_group' => array(
-                    'type' => 'group',
-                    'heading' => 'Post Types Checklist',
-                    'options' => $this->get_post_type_checklist_options(),
-                ),
+            ) + $this->get_post_type_checklist_options() + array(
                 'preset' => array(
                     'type' => 'select',
                     'heading' => 'UI Preset',

@@ -33,7 +33,20 @@ class JankxSearchHub {
 
     private init() {
         this.collectSettings();
+        this.collectInitialState();
         this.bindEvents();
+    }
+
+    private collectInitialState() {
+        const sortSelect = document.querySelector('.jankx-search-sorter .sort-select') as HTMLSelectElement;
+        if (sortSelect) {
+            this.state.sort = sortSelect.value;
+        }
+
+        const queryInput = document.querySelector('.jankx-search-keyword .search-input') as HTMLInputElement;
+        if (queryInput) {
+            this.state.q = queryInput.value;
+        }
     }
 
     private collectSettings() {
