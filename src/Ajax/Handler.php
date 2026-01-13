@@ -84,7 +84,7 @@ class Handler
                     if (!empty($item_html)) {
                         echo $item_html;
                     } else {
-                        $this->render_default_item($post, $preset);
+                        $this->render_default_item($post, $preset, $state);
                     }
                 }
             }
@@ -92,19 +92,33 @@ class Handler
         return ob_get_clean();
     }
 
-    protected function render_default_item($post, $preset)
+    protected function render_default_item($post, $preset, $state = [])
     {
+        $video_url = get_post_meta($post->ID, '_video_embed_url', true) ?: get_post_meta($post->ID, '_video_url', true);
+        $is_video = (get_post_format($post) === 'video' || $post->post_type === 'webinar') && !empty($video_url);
+        $use_popup = (isset($state['enable_video_popup']) && ($state['enable_video_popup'] === 'true' || $state['enable_video_popup'] === true)) && $is_video;
+
+        $link = $use_popup ? $video_url : get_permalink($post);
+        $class = $use_popup ? 'open-video' : '';
         ?>
         <div class="result-item">
             <?php if (has_post_thumbnail($post)): ?>
                 <div class="result-image">
-                    <?php echo get_the_post_thumbnail($post, 'medium'); ?>
+                    <a href="<?php echo esc_url($link); ?>" class="<?php echo esc_attr($class); ?>">
+                        <?php echo get_the_post_thumbnail($post, 'medium'); ?>
+                        <?php if ($is_video): ?>
+                            <div class="video-overlay-icon">
+                                <i class="dashicons dashicons-controls-play"></i>
+                            </div>
+                        <?php endif; ?>
+                    </a>
                 </div>
             <?php endif; ?>
             <div class="result-content">
                 <span class="result-label"><?php echo esc_html(strtoupper($this->get_post_label($post))); ?></span>
                 <h3 class="result-title">
-                    <a href="<?php echo get_permalink($post); ?>"><?php echo get_the_title($post); ?></a>
+                    <a href="<?php echo esc_url($link); ?>"
+                        class="<?php echo esc_attr($class); ?>"><?php echo get_the_title($post); ?></a>
                 </h3>
                 <div class="result-excerpt">
                     <?php echo wp_trim_words(get_the_excerpt($post), 25); ?>

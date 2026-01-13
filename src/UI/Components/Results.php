@@ -11,6 +11,7 @@ class Results extends AbstractComponent
             'post_type_post' => 'true', // Default post type
             'show_pagination' => 'true', // Default pagination visibility
             'show_featured' => 'true', // Default show featured
+            'enable_video_popup' => 'true', // Default enable video popup
         ], $atts);
 
         $preset = $atts['preset'] ?? 'default';
@@ -61,6 +62,12 @@ class Results extends AbstractComponent
             while ($query->have_posts()) {
                 $query->the_post();
                 $post = get_post();
+                $video_url = get_post_meta($post->ID, '_video_embed_url', true) ?: get_post_meta($post->ID, '_video_url', true);
+                $is_video = !empty($video_url);
+                $enable_setting = $atts['enable_video_popup'] ?? 'true';
+                $use_popup = ($enable_setting === 'true' || $enable_setting === true) && $is_video;
+                $link = $use_popup ? $video_url : get_permalink();
+                $class = $use_popup ? 'open-video' : '';
                 ?>
                 <div class="featured-item">
                     <div class="result-image">
@@ -68,13 +75,20 @@ class Results extends AbstractComponent
                             <i class="icon-star"></i> Featured
                         </div>
                         <?php if (has_post_thumbnail()): ?>
-                            <a href="<?php the_permalink(); ?>"><?php the_post_thumbnail('large'); ?></a>
+                            <a href="<?php echo esc_url($link); ?>" class="<?php echo esc_attr($class); ?>">
+                                <?php the_post_thumbnail('large'); ?>
+                                <?php if ($is_video): ?>
+                                    <div class="video-overlay-icon">
+                                        <i class="dashicons dashicons-controls-play"></i>
+                                    </div>
+                                <?php endif; ?>
+                            </a>
                         <?php endif; ?>
                     </div>
                     <div class="result-content">
                         <span class="result-label"><?php echo esc_html(strtoupper($this->get_post_label($post))); ?></span>
                         <h3 class="result-title">
-                            <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                            <a href="<?php echo esc_url($link); ?>" class="<?php echo esc_attr($class); ?>"><?php the_title(); ?></a>
                         </h3>
                     </div>
                 </div>
@@ -109,7 +123,7 @@ class Results extends AbstractComponent
                 if (!empty($item_html)) {
                     echo $item_html;
                 } else {
-                    $this->render_default_item($post);
+                    $this->render_default_item($post, $atts);
                 }
             }
             wp_reset_postdata();
@@ -159,19 +173,33 @@ class Results extends AbstractComponent
         return $post_types;
     }
 
-    protected function render_default_item($post)
+    protected function render_default_item($post, $atts = [])
     {
+        $video_url = get_post_meta($post->ID, '_video_embed_url', true) ?: get_post_meta($post->ID, '_video_url', true);
+        $is_video = !empty($video_url);
+        $enable_setting = $atts['enable_video_popup'] ?? 'true';
+        $use_popup = ($enable_setting === 'true' || $enable_setting === true) && $is_video;
+        $link = $use_popup ? $video_url : get_permalink($post);
+        $class = $use_popup ? 'open-video' : '';
         // Simple fallback default item if no filter hooks it
         ?>
         <div class="result-item default-fallback">
             <div class="result-image">
                 <?php if (has_post_thumbnail($post)): ?>
-                    <a href="<?php echo get_permalink($post); ?>"><?php echo get_the_post_thumbnail($post, 'medium'); ?></a>
+                    <a href="<?php echo esc_url($link); ?>"
+                        class="<?php echo esc_attr($class); ?>"><?php echo get_the_post_thumbnail($post, 'medium'); ?>
+                        <?php if ($is_video): ?>
+                            <div class="video-overlay-icon">
+                                <i class="dashicons dashicons-controls-play"></i>
+                            </div>
+                        <?php endif; ?>
+                    </a>
                 <?php endif; ?>
             </div>
             <div class="result-content">
                 <span class="result-label"><?php echo esc_html(strtoupper($this->get_post_label($post))); ?></span>
-                <h3 class="result-title"><a href="<?php echo get_permalink($post); ?>"><?php echo get_the_title($post); ?></a>
+                <h3 class="result-title"><a href="<?php echo esc_url($link); ?>"
+                        class="<?php echo esc_attr($class); ?>"><?php echo get_the_title($post); ?></a>
                 </h3>
                 <div class="result-excerpt"><?php echo wp_trim_words(get_the_excerpt($post), 20); ?></div>
             </div>

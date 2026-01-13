@@ -147,6 +147,12 @@ class UXBuilder
                         'grid' => 'Grid View',
                     ),
                 ),
+                'enable_video_popup' => array(
+                    'type' => 'checkbox',
+                    'heading' => 'Enable Video Popup',
+                    'description' => 'If the post format is Video, clicking the item will open a video popup instead of the detail page.',
+                    'default' => 'true',
+                ),
             ),
         ));
     }
