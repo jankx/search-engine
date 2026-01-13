@@ -84,6 +84,7 @@
     cursor: pointer;
     position: relative;
     flex-shrink: 0;
+    margin-bottom: 0;
 }
 
 .filter-list input[type="checkbox"]:checked {
@@ -202,8 +203,8 @@
     position: absolute;
     top: 10px;
     left: 10px;
-    background: var(--jankx-search-accent);
-    color: #000;
+    background: #dcff28;
+    color: #006eb7;
     padding: 4px 10px;
     font-weight: bold;
     font-size: 0.75rem;
@@ -301,4 +302,10 @@
 
 .jankx-search-results-container ul.links.page-numbers li {
     margin-top: 8px;
+}
+
+.blue-bg {
+    background: #7db5da;
+    background: linear-gradient(180deg, rgba(125, 181, 218, 1) 0%, rgba(125, 181, 218, 0) 100%);
+    min-height: 100px;
 }
