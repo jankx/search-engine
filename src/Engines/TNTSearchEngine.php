@@ -12,7 +12,7 @@ class TNTSearchEngine extends AbstractEngine
         $storage = $this->getConfig('storage');
         if (!$storage) {
             $upload_dir = wp_upload_dir();
-            $storage = $upload_dir['basedir'] . '/jankx-search';
+            $storage = $upload_dir['basedir'] . '/jankx/search-engine';
         }
 
         if (!file_exists($storage)) {

@@ -12,7 +12,7 @@ class Indexer
         $this->tnt = new TNTSearch();
 
         $upload_dir = wp_upload_dir();
-        $storage = $upload_dir['basedir'] . '/jankx-search';
+        $storage = $upload_dir['basedir'] . '/jankx/search-engine';
 
         if (!file_exists($storage)) {
             mkdir($storage, 0755, true);
