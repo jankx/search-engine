@@ -19,6 +19,7 @@ class UXBuilder
         add_shortcode('jankx_search_filter', array($this, 'render_filter'));
         add_shortcode('jankx_search_sorter', array($this, 'render_sorter'));
         add_shortcode('jankx_search_results', array($this, 'render_results'));
+        add_shortcode('jankx_search_selected_filters', array($this, 'render_selected_filters'));
     }
 
     public function register_elements()
@@ -172,6 +173,10 @@ class UXBuilder
     public function render_results($atts)
     {
         return (new \Jankx\SearchEngine\UI\Components\Results())->render($atts);
+    }
+    public function render_selected_filters($atts)
+    {
+        return (new \Jankx\SearchEngine\UI\Components\SelectedFilters())->render($atts);
     }
 
     protected function get_post_types_options()

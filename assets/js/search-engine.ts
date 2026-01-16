@@ -24,10 +24,12 @@ class JankxSearchHub {
     private debounceTimer: number | null = null;
     private $results: HTMLElement | null = null;
     private $pagination: HTMLElement | null = null;
+    private $selectedFilters: HTMLElement | null = null;
 
     constructor() {
         this.$results = document.querySelector('.jankx-search-results-container .results-grid');
         this.$pagination = document.querySelector('.pagination-container');
+        this.$selectedFilters = document.querySelector('.jankx-search-selected-filters');
         this.init();
     }
 
@@ -127,6 +129,49 @@ class JankxSearchHub {
                 }
             }
         });
+
+        // Selected Filters: Remove single filter
+        document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            const removeBtn = target.closest('.selected-filter-item .remove-filter');
+            if (removeBtn) {
+                e.preventDefault();
+                const item = removeBtn.closest('.selected-filter-item');
+                if (item) {
+                    const taxonomy = item.getAttribute('data-taxonomy');
+                    const termId = item.getAttribute('data-term-id');
+                    if (taxonomy && termId && this.state.filters[taxonomy]) {
+                        // Remove term from state
+                        this.state.filters[taxonomy] = this.state.filters[taxonomy].filter(t => t !== termId);
+
+                        // Uncheck the checkbox in the sidebar if present
+                        const checkbox = document.querySelector(`.jankx-search-filters input[name="filter[${taxonomy}][]"][value="${termId}"]`) as HTMLInputElement;
+                        if (checkbox) checkbox.checked = false;
+
+                        this.state.page = 1;
+                        this.search();
+                    }
+                }
+            }
+        });
+
+        // Selected Filters: Clear all
+        document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            if (target.matches('.clear-all-filters-btn') || target.closest('.clear-all-filters-btn')) {
+                e.preventDefault();
+                this.state.filters = {};
+
+                // Uncheck all checkboxes
+                document.querySelectorAll('.jankx-search-filters input[type="checkbox"]').forEach((element) => {
+                    const cb = element as HTMLInputElement;
+                    cb.checked = false;
+                });
+
+                this.state.page = 1;
+                this.search();
+            }
+        });
     }
 
     private debounceSearch() {
@@ -175,6 +220,10 @@ class JankxSearchHub {
                 this.$results.innerHTML = result.data.html;
                 if (this.$pagination) {
                     this.$pagination.innerHTML = result.data.pagination;
+                }
+                if (result.data.selected_filters !== undefined && this.$selectedFilters) {
+                    this.$selectedFilters.outerHTML = result.data.selected_filters;
+                    this.$selectedFilters = document.querySelector('.jankx-search-selected-filters');
                 }
             }
         } catch (error) {

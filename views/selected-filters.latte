@@ -1,0 +1,11 @@
+<div class="jankx-search-selected-filters" style="{if !$has_selected}display:none;{/if}">
+    <ul class="selected-filters-list">
+        <li n:foreach="$selected_filters as $filter" class="selected-filter-item" data-taxonomy="{$filter['taxonomy']}" data-term-id="{$filter['id']}">
+            <span class="filter-name">{$filter['name']}</span>
+            <button type="button" class="remove-filter" aria-label="Remove filter">×</button>
+        </li>
+    </ul>
+    <div class="clear-all-wrapper">
+        <button type="button" class="clear-all-filters-btn">{__('Clear All', 'jankx')}</button>
+    </div>
+</div>

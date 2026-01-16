@@ -1,0 +1,41 @@
+<?php
+namespace Jankx\SearchEngine\UI\Components;
+
+class SelectedFilters extends AbstractComponent
+{
+    protected $name = 'selected_filters';
+
+    public function render($atts = [])
+    {
+        $selected = [];
+        $filters = isset($atts['filters']) ? $atts['filters'] : ($_GET['filter'] ?? []);
+
+        if (!empty($filters) && is_array($filters)) {
+            foreach ($filters as $taxonomy => $term_ids) {
+                if (!is_array($term_ids)) {
+                    continue;
+                }
+                foreach ($term_ids as $term_id) {
+                    $term = get_term($term_id, $taxonomy);
+                    if ($term && !is_wp_error($term)) {
+                        $selected[] = [
+                            'id' => $term->term_id,
+                            'name' => $term->name,
+                            'taxonomy' => $taxonomy,
+                            'slug' => $term->slug,
+                            'term' => $term
+                        ];
+                    }
+                }
+            }
+        }
+
+        $has_selected = !empty($selected);
+
+        return $this->render_template('selected-filters', [
+            'selected_filters' => $selected,
+            'has_selected' => $has_selected,
+            'atts' => $atts,
+        ]);
+    }
+}

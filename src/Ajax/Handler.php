@@ -61,9 +61,12 @@ class Handler
             $pagination_html = $this->render_pagination_html($results['total'], $limit, $state['page'] ?? 1, $state);
         }
 
+        $selected_filters_html = (new \Jankx\SearchEngine\UI\Components\SelectedFilters())->render(['filters' => $filters]);
+
         wp_send_json_success([
             'html' => $html,
             'pagination' => $pagination_html,
+            'selected_filters' => $selected_filters_html,
         ]);
     }
 
