@@ -9,7 +9,7 @@ class UXBuilder
         if (did_action('init')) {
             $this->register_shortcodes();
         } else {
-            add_action('init', array($this, 'register_shortcodes'));
+            add_action('init', array($this, 'register_shortcodes'), 999);
         }
     }
 
@@ -54,6 +54,7 @@ class UXBuilder
 
         // Add checkboxes and term selectors for each taxonomy
         $taxonomies = get_taxonomies(['public' => true], 'objects');
+        $taxonomies = apply_filters('jankx_search_ux_builder_taxonomies', $taxonomies);
         foreach ($taxonomies as $slug => $tax) {
             // Checkbox to enable this taxonomy
             $filter_options['show_tax_' . $slug] = array(
@@ -192,6 +193,7 @@ class UXBuilder
     protected function get_post_type_checklist_options()
     {
         $post_types = get_post_types(['public' => true], 'objects');
+        $post_types = apply_filters('jankx_search_ux_builder_post_types', $post_types);
         $options = [];
         foreach ($post_types as $slug => $pt) {
             $options['post_type_' . $slug] = array(
