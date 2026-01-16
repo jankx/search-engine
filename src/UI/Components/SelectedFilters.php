@@ -9,6 +9,7 @@ class SelectedFilters extends AbstractComponent
     {
         $selected = [];
         $filters = isset($atts['filters']) ? $atts['filters'] : ($_GET['filter'] ?? []);
+        $keyword = isset($atts['keyword']) ? $atts['keyword'] : ($_GET['s'] ?? ($_GET['q'] ?? ''));
 
         if (!empty($filters) && is_array($filters)) {
             foreach ($filters as $taxonomy => $term_ids) {
@@ -28,6 +29,16 @@ class SelectedFilters extends AbstractComponent
                     }
                 }
             }
+        }
+
+        if (!empty($keyword)) {
+            $selected[] = [
+                'id' => 'current_query',
+                'name' => $keyword,
+                'taxonomy' => 'search_keyword',
+                'slug' => 'search_keyword',
+                'term' => null
+            ];
         }
 
         $has_selected = !empty($selected);

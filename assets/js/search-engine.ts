@@ -25,11 +25,13 @@ class JankxSearchHub {
     private $results: HTMLElement | null = null;
     private $pagination: HTMLElement | null = null;
     private $selectedFilters: HTMLElement | null = null;
+    private $featuredItems: HTMLElement | null = null;
 
     constructor() {
         this.$results = document.querySelector('.jankx-search-results-container .results-grid');
         this.$pagination = document.querySelector('.pagination-container');
         this.$selectedFilters = document.querySelector('.jankx-search-selected-filters');
+        this.$featuredItems = document.querySelector('.jankx-featured-items');
         this.init();
     }
 
@@ -71,8 +73,14 @@ class JankxSearchHub {
         document.addEventListener('input', (e) => {
             const target = e.target as HTMLInputElement;
             if (target.closest('.jankx-search-keyword .search-input')) {
-                this.state.q = target.value;
+                const val = target.value;
+                this.state.q = val;
                 this.state.page = 1;
+
+                // Treat keyword as a selected filter
+                this.updateSelectedFilterUI('search_keyword', 'current_query', val, !!val);
+                this.updateFeaturedItemsVisibility();
+
                 this.debounceSearch();
             }
         });
@@ -89,11 +97,19 @@ class JankxSearchHub {
                     }
 
                     const val = target.value;
+                    const label = target.closest('label');
+                    const nameSpan = label ? label.querySelector('.term-name') : null;
+                    const rawName = nameSpan ? (nameSpan.textContent || '').trim() : val;
+                    const termName = this.decodeHTMLEntities(rawName);
+
                     if (target.checked) {
                         this.state.filters[taxonomy].push(val);
+                        this.updateSelectedFilterUI(taxonomy, val, termName, true);
                     } else {
                         this.state.filters[taxonomy] = this.state.filters[taxonomy].filter(item => item !== val);
+                        this.updateSelectedFilterUI(taxonomy, val, termName, false);
                     }
+                    this.updateFeaturedItemsVisibility();
 
                     this.state.page = 1;
                     this.search();
@@ -140,13 +156,27 @@ class JankxSearchHub {
                 if (item) {
                     const taxonomy = item.getAttribute('data-taxonomy');
                     const termId = item.getAttribute('data-term-id');
-                    if (taxonomy && termId && this.state.filters[taxonomy]) {
+
+                    if (taxonomy === 'search_keyword') {
+                        this.state.q = '';
+                        const input = document.querySelector('.jankx-search-keyword .search-input') as HTMLInputElement;
+                        if (input) input.value = '';
+
+                        this.updateSelectedFilterUI(taxonomy, termId || '', '', false);
+                        this.updateFeaturedItemsVisibility();
+
+                        this.state.page = 1;
+                        this.search();
+                    } else if (taxonomy && termId && this.state.filters[taxonomy]) {
                         // Remove term from state
                         this.state.filters[taxonomy] = this.state.filters[taxonomy].filter(t => t !== termId);
 
                         // Uncheck the checkbox in the sidebar if present
                         const checkbox = document.querySelector(`.jankx-search-filters input[name="filter[${taxonomy}][]"][value="${termId}"]`) as HTMLInputElement;
                         if (checkbox) checkbox.checked = false;
+
+                        this.updateSelectedFilterUI(taxonomy, termId, '', false);
+                        this.updateFeaturedItemsVisibility();
 
                         this.state.page = 1;
                         this.search();
@@ -167,6 +197,14 @@ class JankxSearchHub {
                     const cb = element as HTMLInputElement;
                     cb.checked = false;
                 });
+
+                // Keyword
+                this.state.q = '';
+                const input = document.querySelector('.jankx-search-keyword .search-input') as HTMLInputElement;
+                if (input) input.value = '';
+
+                this.clearAllSelectedFiltersUI();
+                this.updateFeaturedItemsVisibility();
 
                 this.state.page = 1;
                 this.search();
@@ -221,9 +259,11 @@ class JankxSearchHub {
                 if (this.$pagination) {
                     this.$pagination.innerHTML = result.data.pagination;
                 }
-                if (result.data.selected_filters !== undefined && this.$selectedFilters) {
-                    this.$selectedFilters.outerHTML = result.data.selected_filters;
-                    this.$selectedFilters = document.querySelector('.jankx-search-selected-filters');
+                if (this.$pagination) {
+                    this.$pagination.innerHTML = result.data.pagination;
+                }
+                if (result.data.selected_filters !== undefined) {
+                    this.syncSelectedFiltersFromHTML(result.data.selected_filters);
                 }
             }
         } catch (error) {
@@ -261,7 +301,193 @@ class JankxSearchHub {
         }
         return html;
     }
+
+    private clearAllSelectedFiltersUI() {
+        if (!this.$selectedFilters) return;
+        const list = this.$selectedFilters.querySelector('.selected-filters-list');
+        if (list) {
+            list.innerHTML = '';
+        }
+        this.$selectedFilters.style.display = 'none';
+    }
+
+    private updateSelectedFilterUI(taxonomy: string, termId: string, termName: string, isSelected: boolean) {
+        if (!this.$selectedFilters) return;
+
+        termName = this.decodeHTMLEntities(termName);
+
+        let list = this.$selectedFilters.querySelector('.selected-filters-list');
+
+        if (isSelected) {
+            // Ensure list exists
+            if (!list) {
+                const ul = document.createElement('ul');
+                ul.className = 'selected-filters-list';
+                // Append it before the clear-all-wrapper if it exists, otherwise just prepend
+                const clearWrapper = this.$selectedFilters.querySelector('.clear-all-wrapper');
+                if (clearWrapper) {
+                    this.$selectedFilters.insertBefore(ul, clearWrapper);
+                } else {
+                    this.$selectedFilters.prepend(ul);
+                }
+                list = ul;
+            }
+
+            // --- NEW: Re-inject keyword chip if missing (persistence check) ---
+            // Prevent recursion: do not check if we are currently updating the keyword itself
+            if (taxonomy !== 'search_keyword') {
+                const keywordInput = document.querySelector('.jankx-search-keyword .search-input') as HTMLInputElement;
+                if (keywordInput && keywordInput.value && !list.querySelector('.selected-filter-item[data-taxonomy="search_keyword"]')) {
+                    this.updateSelectedFilterUI('search_keyword', 'current_query', keywordInput.value, true);
+                }
+            }
+            // ----------------------------------------------------------------
+
+            // Check if already exists
+            const existingItem = list.querySelector(`.selected-filter-item[data-taxonomy="${taxonomy}"][data-term-id="${termId}"]`);
+            if (existingItem) {
+                // Update text if needed (e.g. for keyword)
+                const nameSpan = existingItem.querySelector('.filter-name');
+                if (nameSpan) nameSpan.textContent = termName;
+                return;
+            }
+
+            const li = document.createElement('li');
+            li.className = 'selected-filter-item';
+            li.setAttribute('data-taxonomy', taxonomy);
+            li.setAttribute('data-term-id', termId);
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'filter-name';
+            nameSpan.textContent = termName;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'remove-filter';
+            btn.setAttribute('aria-label', 'Remove filter');
+            btn.textContent = '×';
+
+            li.appendChild(nameSpan);
+            li.appendChild(btn);
+            list.appendChild(li);
+
+            this.$selectedFilters.style.display = '';
+        } else {
+            if (!list) return;
+            const item = list.querySelector(`.selected-filter-item[data-taxonomy="${taxonomy}"][data-term-id="${termId}"]`);
+            if (item) {
+                item.remove();
+            }
+            if (list.children.length === 0) {
+                this.$selectedFilters.style.display = 'none';
+            }
+        }
+    }
+
+    private syncSelectedFiltersFromHTML(html: string) {
+        if (!this.$selectedFilters) {
+            const tempContainer = document.createElement('div');
+            tempContainer.innerHTML = html;
+            const newRoot = tempContainer.firstElementChild;
+            if (newRoot) {
+                const dest = document.querySelector('.jankx-search-selected-filters');
+                if (dest) dest.outerHTML = newRoot.outerHTML;
+                this.$selectedFilters = document.querySelector('.jankx-search-selected-filters');
+            }
+            return;
+        }
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newContainer = doc.body.firstElementChild as HTMLElement;
+
+        if (!newContainer) {
+            // Empty response means no filters selected
+            this.clearAllSelectedFiltersUI();
+            return;
+        }
+
+        // 1. Sync Visibility
+        const hasSelected = newContainer.style.display !== 'none';
+
+        // 2. Sync Items
+        const newItems = Array.from(newContainer.querySelectorAll('.selected-filter-item'));
+        const currentList = this.$selectedFilters.querySelector('.selected-filters-list');
+
+        // If there are new items but no list in current DOM, create it
+        let list = currentList;
+        if (newItems.length > 0 && !list) {
+            const ul = document.createElement('ul');
+            ul.className = 'selected-filters-list';
+            const clearWrapper = this.$selectedFilters.querySelector('.clear-all-wrapper');
+            if (clearWrapper) {
+                this.$selectedFilters.insertBefore(ul, clearWrapper);
+            } else {
+                this.$selectedFilters.prepend(ul);
+            }
+            list = ul;
+        }
+
+        // Create a map of new items keys
+        const newItemKeys = new Set();
+        newItems.forEach((item) => {
+            const tax = item.getAttribute('data-taxonomy');
+            const termId = item.getAttribute('data-term-id');
+            const key = `${tax}|${termId}`;
+            newItemKeys.add(key);
+
+            // Add or Update
+            const termNameRaw = item.querySelector('.filter-name')?.textContent || '';
+            const termName = termNameRaw.trim();
+            this.updateSelectedFilterUI(tax!, termId!, termName, true);
+        });
+
+        // 3. Remove old items that are not in new list
+        if (list) {
+            const currentItems = Array.from(list.querySelectorAll('.selected-filter-item'));
+            currentItems.forEach(item => {
+                const tax = item.getAttribute('data-taxonomy') || '';
+                const termId = item.getAttribute('data-term-id') || '';
+                const key = `${tax}|${termId}`;
+
+                if (!newItemKeys.has(key)) {
+                    // Special case: Maintain Keyword (current_query) if input has value
+                    if (tax === 'search_keyword') {
+                        // Check input value again just to be safe?
+                        // The server logic should ideally handle this.
+                    } else {
+                        item.remove();
+                    }
+                }
+            });
+
+            if (list.children.length === 0) {
+                this.$selectedFilters.style.display = 'none';
+            } else {
+                this.$selectedFilters.style.display = '';
+            }
+        }
+    }
+
+    private decodeHTMLEntities(text: string): string {
+        const textArea = document.createElement('textarea');
+        textArea.innerHTML = text;
+        return textArea.value;
+    }
+
+    private updateFeaturedItemsVisibility() {
+        if (!this.$featuredItems) return;
+        const hasKeyword = !!this.state.q;
+        const hasFilters = Object.values(this.state.filters).some(terms => terms.length > 0);
+
+        if (hasKeyword || hasFilters) {
+            this.$featuredItems.style.display = 'none';
+        } else {
+            this.$featuredItems.style.display = '';
+        }
+    }
 }
+
 
 document.addEventListener('DOMContentLoaded', () => {
     new JankxSearchHub();
