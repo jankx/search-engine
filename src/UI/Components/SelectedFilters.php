@@ -16,6 +16,9 @@ class SelectedFilters extends AbstractComponent
                 if (!is_array($term_ids)) {
                     continue;
                 }
+                $tax_obj = get_taxonomy($taxonomy);
+                $tax_label = $tax_obj ? $tax_obj->labels->singular_name : $taxonomy;
+
                 foreach ($term_ids as $term_id) {
                     $term = get_term($term_id, $taxonomy);
                     if ($term && !is_wp_error($term)) {
@@ -23,6 +26,7 @@ class SelectedFilters extends AbstractComponent
                             'id' => $term->term_id,
                             'name' => $term->name,
                             'taxonomy' => $taxonomy,
+                            'taxonomy_label' => $tax_label,
                             'slug' => $term->slug,
                             'term' => $term
                         ];

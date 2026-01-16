@@ -1,11 +1,14 @@
 <div class="jankx-search-selected-filters" style="{if !$has_selected}display:none;{/if}">
+    <span class="active-filters-label">{__('Filters:', 'jankx')}</span>
     <ul class="selected-filters-list">
-        <li n:foreach="$selected_filters as $filter" class="selected-filter-item" data-taxonomy="{$filter['taxonomy']}" data-term-id="{$filter['id']}">
-            <span class="filter-name">{$filter['name']}</span>
+        <li n:foreach="$selected_filters as $filter" class="selected-filter-item" data-taxonomy="{$filter['taxonomy']}" data-term-id="{$filter['id']}" data-taxonomy-label="{$filter['taxonomy_label']??''}">
+            <span class="filter-name">
+                {if !empty($filter['taxonomy_label'])}{$filter['taxonomy_label']}: {/if}{$filter['name']}
+            </span>
             <button type="button" class="remove-filter" aria-label="Remove filter">×</button>
         </li>
     </ul>
     <div class="clear-all-wrapper">
-        <button type="button" class="clear-all-filters-btn">{__('Clear All', 'jankx')}</button>
+        <button type="button" class="clear-all-filters-btn">{__('Clear', 'jankx')}</button>
     </div>
 </div>

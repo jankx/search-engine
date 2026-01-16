@@ -310,29 +310,38 @@
     min-height: 100px;
 }
 
-/* Selected Filters */
 .jankx-search-selected-filters {
-    margin-bottom: 25px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.active-filters-label {
+    font-weight: 700;
+    color: #333;
+    font-size: 1rem;
 }
 
 .selected-filters-list {
     list-style: none;
     padding: 0;
-    margin: 0 0 15px 0;
+    margin: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
 }
 
 .selected-filter-item {
-    background: #eef2f5;
-    border: 1px solid #dce4e9;
+    background: #ffffff;
+    border: 1px solid #eee;
     border-radius: 20px;
-    padding: 5px 12px;
+    padding: 4px 15px;
     display: flex;
     align-items: center;
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: #333;
+    font-weight: 500;
 }
 
 .selected-filter-item .remove-filter {
@@ -346,6 +355,7 @@
     padding: 0;
     display: flex;
     align-items: center;
+    margin-bottom: 0;
 }
 
 .selected-filter-item .remove-filter:hover {
@@ -359,11 +369,13 @@
 .clear-all-filters-btn {
     background: none;
     border: none;
-    color: var(--jankx-search-primary);
-    text-decoration: underline;
+    color: #6370b5;
+    text-decoration: none;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 1rem;
     padding: 0;
+    font-weight: 500;
+    text-transform: none;
 }
 
 .clear-all-filters-btn:hover {

@@ -78,7 +78,7 @@ class JankxSearchHub {
                 this.state.page = 1;
 
                 // Treat keyword as a selected filter
-                this.updateSelectedFilterUI('search_keyword', 'current_query', val, !!val);
+                this.updateSelectedFilterUI('search_keyword', 'current_query', val, !!val, '');
                 this.updateFeaturedItemsVisibility();
 
                 this.debounceSearch();
@@ -102,12 +102,16 @@ class JankxSearchHub {
                     const rawName = nameSpan ? (nameSpan.textContent || '').trim() : val;
                     const termName = this.decodeHTMLEntities(rawName);
 
+                    const filterGroup = target.closest('.filter-group');
+                    const taxTitle = filterGroup ? filterGroup.querySelector('.filter-title') : null;
+                    const taxLabel = taxTitle ? (taxTitle.textContent || '').trim() : '';
+
                     if (target.checked) {
                         this.state.filters[taxonomy].push(val);
-                        this.updateSelectedFilterUI(taxonomy, val, termName, true);
+                        this.updateSelectedFilterUI(taxonomy, val, termName, true, taxLabel);
                     } else {
                         this.state.filters[taxonomy] = this.state.filters[taxonomy].filter(item => item !== val);
-                        this.updateSelectedFilterUI(taxonomy, val, termName, false);
+                        this.updateSelectedFilterUI(taxonomy, val, termName, false, taxLabel);
                     }
                     this.updateFeaturedItemsVisibility();
 
@@ -311,7 +315,7 @@ class JankxSearchHub {
         this.$selectedFilters.style.display = 'none';
     }
 
-    private updateSelectedFilterUI(taxonomy: string, termId: string, termName: string, isSelected: boolean) {
+    private updateSelectedFilterUI(taxonomy: string, termId: string, termName: string, isSelected: boolean, taxonomyLabel: string = '') {
         if (!this.$selectedFilters) return;
 
         termName = this.decodeHTMLEntities(termName);
@@ -338,7 +342,7 @@ class JankxSearchHub {
             if (taxonomy !== 'search_keyword') {
                 const keywordInput = document.querySelector('.jankx-search-keyword .search-input') as HTMLInputElement;
                 if (keywordInput && keywordInput.value && !list.querySelector('.selected-filter-item[data-taxonomy="search_keyword"]')) {
-                    this.updateSelectedFilterUI('search_keyword', 'current_query', keywordInput.value, true);
+                    this.updateSelectedFilterUI('search_keyword', 'current_query', keywordInput.value, true, '');
                 }
             }
             // ----------------------------------------------------------------
@@ -348,7 +352,9 @@ class JankxSearchHub {
             if (existingItem) {
                 // Update text if needed (e.g. for keyword)
                 const nameSpan = existingItem.querySelector('.filter-name');
-                if (nameSpan) nameSpan.textContent = termName;
+                if (nameSpan) {
+                    nameSpan.textContent = taxonomyLabel ? `${taxonomyLabel}: ${termName}` : termName;
+                }
                 return;
             }
 
@@ -356,10 +362,11 @@ class JankxSearchHub {
             li.className = 'selected-filter-item';
             li.setAttribute('data-taxonomy', taxonomy);
             li.setAttribute('data-term-id', termId);
+            li.setAttribute('data-taxonomy-label', taxonomyLabel);
 
             const nameSpan = document.createElement('span');
             nameSpan.className = 'filter-name';
-            nameSpan.textContent = termName;
+            nameSpan.textContent = taxonomyLabel ? `${taxonomyLabel}: ${termName}` : termName;
 
             const btn = document.createElement('button');
             btn.type = 'button';
@@ -439,7 +446,15 @@ class JankxSearchHub {
             // Add or Update
             const termNameRaw = item.querySelector('.filter-name')?.textContent || '';
             const termName = termNameRaw.trim();
-            this.updateSelectedFilterUI(tax!, termId!, termName, true);
+            const taxonomyLabel = (item as HTMLElement).getAttribute('data-taxonomy-label') || '';
+
+            // Let's strip the prefix if it exists when pulling from server HTML
+            let cleanTermName = termName;
+            if (taxonomyLabel && termName.startsWith(`${taxonomyLabel}: `)) {
+                cleanTermName = termName.replace(`${taxonomyLabel}: `, '');
+            }
+
+            this.updateSelectedFilterUI(tax!, termId!, cleanTermName, true, taxonomyLabel);
         });
 
         // 3. Remove old items that are not in new list
