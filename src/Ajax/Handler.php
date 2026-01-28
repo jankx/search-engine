@@ -66,11 +66,82 @@ class Handler
             'keyword' => $keywords
         ]);
 
+        // --- Term Counts Calculation ---
+        $all_ids = $results['all_ids'] ?? [];
+        // 1. Base counts (using current intersection)
+        $term_counts = $this->get_term_counts($all_ids);
+
+        // 2. For each active filter taxonomy, recalculate counts as if that filter was NOT applied (for OR-like behavior within taxonomy)
+        if (!empty($filters)) {
+            foreach (array_keys($filters) as $active_tax) {
+                // Remove the current taxonomy from conditions
+                $shadow_filters = $filters;
+                unset($shadow_filters[$active_tax]);
+
+                // Perform shadow search
+                $shadow_results = $engine->search($keywords, [
+                    'filters' => $shadow_filters,
+                    'sort' => $sort,
+                    'limit' => 1, // We only care about all_ids
+                    'page' => 1,
+                    'post_types' => $post_types,
+                ]);
+                
+                $shadow_ids = $shadow_results['all_ids'] ?? [];
+                
+                // Get counts specific to this taxonomy using the broader dataset
+                $shadow_counts = $this->get_term_counts($shadow_ids, $active_tax);
+                
+                // Merge/Overwrite these counts
+                // This ensures that for the active taxonomy, we show counts of "siblings" based on the parent context
+                foreach ($shadow_counts as $term_id => $count) {
+                    $term_counts[$term_id] = $count;
+                }
+            }
+        }
+
         wp_send_json_success([
             'html' => $html,
             'pagination' => $pagination_html,
             'selected_filters' => $selected_filters_html,
+            'term_counts' => $term_counts,
         ]);
+    }
+
+    protected function get_term_counts($post_ids, $taxonomy = null)
+    {
+        global $wpdb;
+        if (empty($post_ids)) {
+            return [];
+        }
+
+        // Sanitize IDs (ensure integers)
+        $post_ids = array_map('intval', $post_ids);
+        $placeholders = implode(',', array_fill(0, count($post_ids), '%d'));
+        
+        $sql = "
+            SELECT tt.term_id, COUNT(DISTINCT tr.object_id) as count
+            FROM {$wpdb->term_relationships} tr
+            JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+            WHERE tr.object_id IN ($placeholders)
+        ";
+        
+        $args = $post_ids;
+
+        if ($taxonomy) {
+            $sql .= " AND tt.taxonomy = %s";
+            $args[] = $taxonomy;
+        }
+
+        $sql .= " GROUP BY tt.term_id";
+
+        $results = $wpdb->get_results($wpdb->prepare($sql, $args));
+
+        $counts = [];
+        foreach ($results as $row) {
+            $counts[$row->term_id] = (int) $row->count;
+        }
+        return $counts;
     }
 
     public function render_results_html($results, $state = [])

@@ -87,6 +87,7 @@ class TNTSearchEngine extends AbstractEngine
         }
 
         // Filter by Taxonomies (Checkboxes values are now term IDs)
+        // LOGIC: AND between different taxonomies (groups), OR within the same taxonomy (group)
         if (!empty($args['filters'])) {
             $tax_query = [];
             foreach ($args['filters'] as $taxonomy => $terms) {
@@ -165,6 +166,7 @@ class TNTSearchEngine extends AbstractEngine
 
         return [
             'results' => $paged_ids,
+            'all_ids' => $ids,
             'total' => $total,
             'time' => $res['execution_time'] ?? 0,
         ];

@@ -266,6 +266,9 @@ class JankxSearchHub {
                 if (this.$pagination) {
                     this.$pagination.innerHTML = result.data.pagination;
                 }
+                if (result.data.term_counts !== undefined) {
+                    this.updateTermCounts(result.data.term_counts);
+                }
                 if (result.data.selected_filters !== undefined) {
                     this.syncSelectedFiltersFromHTML(result.data.selected_filters);
                 }
@@ -277,6 +280,35 @@ class JankxSearchHub {
             this.$results.classList.remove('loading');
             this.$results.style.opacity = '1';
         }
+    }
+
+    private updateTermCounts(counts: Record<string, number>) {
+        const checkboxes = document.querySelectorAll('.jankx-search-filters input[type="checkbox"]');
+        checkboxes.forEach((e) => {
+            const input = e as HTMLInputElement;
+            const termId = input.value;
+            // Default to 0 if not returned
+            const count = counts[termId] ?? 0;
+
+            const label = input.closest('label');
+            if (label) {
+                const countSpan = label.querySelector('.term-count');
+                if (countSpan) {
+                    countSpan.textContent = `(${count})`;
+                }
+
+                // Optional: Disable input if count is 0?
+                // The user didn't explicitly ask to disable, but showing (0) is required.
+                // We'll stick to updating the text.
+                if (count === 0 && !input.checked) {
+                    label.classList.add('disabled');
+                    input.disabled = true;
+                } else {
+                    label.classList.remove('disabled');
+                    input.disabled = false;
+                }
+            }
+        });
     }
 
     private showSkeleton() {
