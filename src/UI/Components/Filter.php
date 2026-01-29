@@ -31,10 +31,22 @@ class Filter extends AbstractComponent
             ];
             $hasItems = true;
         }
+
+        $active_filters = isset($_GET['filter']) ? $_GET['filter'] : [];
+        if (empty($active_filters)) {
+            foreach ($enabledTax as $key => $value) {
+                $tax = str_replace('show_tax_', '', $key);
+                if (isset($_GET[$tax])) {
+                    $active_filters[$tax] = (array) $_GET[$tax];
+                }
+            }
+        }
+
         return $this->render_template('filters', [
             'tax_data' => $tax_data,
             'atts' => $atts,
             'has_items' => $hasItems,
+            'active_filters' => $active_filters,
         ]);
     }
 }
