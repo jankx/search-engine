@@ -111,6 +111,35 @@ class Results extends AbstractComponent
             'order' => 'DESC',
         ];
 
+        // Apply filters from URL to initial render
+        $filters = $_GET['filter'] ?? [];
+        if (empty($filters)) {
+            // Support simplified URL params if not using 'filter' array
+            $taxonomies = get_taxonomies(['public' => true]);
+            foreach ($taxonomies as $tax) {
+                if (isset($_GET[$tax])) {
+                    $filters[$tax] = (array) $_GET[$tax];
+                }
+            }
+        }
+
+        if (!empty($filters)) {
+            $tax_query = ['relation' => 'AND'];
+            foreach ($filters as $taxonomy => $terms) {
+                if (!empty($terms)) {
+                    $tax_query[] = [
+                        'taxonomy' => $taxonomy,
+                        'field' => 'term_id',
+                        'terms' => $terms,
+                        'operator' => 'IN'
+                    ];
+                }
+            }
+            if (count($tax_query) > 1) {
+                $args['tax_query'] = $tax_query;
+            }
+        }
+
         $query = new \WP_Query($args);
 
         if ($query->have_posts()) {
@@ -139,7 +168,6 @@ class Results extends AbstractComponent
         }
 
         // We need total posts for the initial render's pagination
-        // This is a bit redundant but necessary for the first page load
         $post_types = $this->resolve_post_types($atts);
         $args = [
             'post_type' => $post_types,
@@ -147,6 +175,36 @@ class Results extends AbstractComponent
             'posts_per_page' => $atts['limit'] ?? 10,
             'fields' => 'ids',
         ];
+
+        // Apply filters from URL to pagination query too
+        $filters = $_GET['filter'] ?? [];
+        if (empty($filters)) {
+            // Support simplified URL params
+            $taxonomies = get_taxonomies(['public' => true]);
+            foreach ($taxonomies as $tax) {
+                if (isset($_GET[$tax])) {
+                    $filters[$tax] = (array) $_GET[$tax];
+                }
+            }
+        }
+
+        if (!empty($filters)) {
+            $tax_query = ['relation' => 'AND'];
+            foreach ($filters as $taxonomy => $terms) {
+                if (!empty($terms)) {
+                    $tax_query[] = [
+                        'taxonomy' => $taxonomy,
+                        'field' => 'term_id',
+                        'terms' => $terms,
+                        'operator' => 'IN'
+                    ];
+                }
+            }
+            if (count($tax_query) > 1) {
+                $args['tax_query'] = $tax_query;
+            }
+        }
+
         $query = new \WP_Query($args);
 
         if (function_exists('flatsome_pagination')) {

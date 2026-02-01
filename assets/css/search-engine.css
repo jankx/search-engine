@@ -72,10 +72,16 @@
     cursor: not-allowed;
 }
 
+
+.filter-list .filter-title {
+    color: #1F333D;
+}
+
 .filter-list .term-label-text {
     display: flex;
     align-items: center;
     gap: 12px;
+    color: #1F333D;
 }
 
 .filter-list input[type="checkbox"] {

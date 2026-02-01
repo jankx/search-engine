@@ -3,7 +3,7 @@
     <ul class="selected-filters-list">
         <li n:foreach="$selected_filters as $filter" class="selected-filter-item" data-taxonomy="{$filter['taxonomy']}" data-term-id="{$filter['id']}" data-taxonomy-label="{$filter['taxonomy_label']??''}">
             <span class="filter-name">
-                {if !empty($filter['taxonomy_label'])}{$filter['taxonomy_label']}: {/if}{$filter['name']}
+                {$filter['name']}
             </span>
             <button type="button" class="remove-filter" aria-label="Remove filter">×</button>
         </li>

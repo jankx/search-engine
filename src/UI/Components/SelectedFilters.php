@@ -19,12 +19,13 @@ class SelectedFilters extends AbstractComponent
                 $tax_obj = get_taxonomy($taxonomy);
                 $tax_label = $tax_obj ? $tax_obj->labels->singular_name : $taxonomy;
 
+                $term_ids = array_unique((array)$term_ids);
                 foreach ($term_ids as $term_id) {
                     $term = get_term($term_id, $taxonomy);
                     if ($term && !is_wp_error($term)) {
                         $selected[] = [
                             'id' => $term->term_id,
-                            'name' => $term->name,
+                            'name' => html_entity_decode($term->name),
                             'taxonomy' => $taxonomy,
                             'taxonomy_label' => $tax_label,
                             'slug' => $term->slug,

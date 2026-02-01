@@ -9,7 +9,7 @@
                 <li n:foreach="$data['terms'] as $term">
                     <label>
                         <span class="term-label-text">
-                            <input type="checkbox" name="filter[{$taxonomy}][]" value="{$term->term_id}">
+                            <input type="checkbox" name="filter[{$taxonomy}][]" value="{$term->term_id}" n:attr="checked => isset($active_filters[$taxonomy]) && in_array($term->term_id, $active_filters[$taxonomy])">
                             <span class="term-name">{$term->name|stripHtml}</span>
                         </span>
                         <span class="term-count">({$term->count})</span>
