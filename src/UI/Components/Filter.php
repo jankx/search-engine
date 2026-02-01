@@ -32,7 +32,7 @@ class Filter extends AbstractComponent
             $hasItems = true;
         }
         return $this->render_template('filters', [
-            'tax_data' => $tax_data,
+            'tax_data' => apply_filters('jankx/search-engine/filter/datas', $tax_data, $this),
             'atts' => $atts,
             'has_items' => $hasItems,
         ]);
