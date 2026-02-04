@@ -47,6 +47,13 @@ class Handler
                 $post_types = is_string($legacy) ? explode(',', $legacy) : $legacy;
             }
         }
+        
+        // Critical Fix: Ensure all Resource CPTs are included in the search scope.
+        // If sorting/filtering by Resource taxonomies, we must search 'any' post type to catch White Papers, Webinars, etc.
+        // Otherwise, default settings might restrict search to just 'post', causing 0 counts for CPTs.
+        if (isset($filters['featured_item_category']) || isset($filters['industry']) || isset($state['filters']['featured_item_category'])) {
+            $post_types = []; // Empty array triggers 'any' in TNTSearchEngine
+        }
 
         $limit = isset($state['limit']) ? (int) $state['limit'] : 10;
         $results = $engine->search($keywords, [
@@ -72,35 +79,62 @@ class Handler
         ]);
 
         // --- Term Counts Calculation ---
+        // --- Term Counts Calculation ---
         $all_ids = $results['all_ids'] ?? [];
         // 1. Base counts (using current intersection)
         $term_counts = $this->get_term_counts($all_ids);
 
-        // 2. For each active filter taxonomy, recalculate counts as if that filter was NOT applied (for OR-like behavior within taxonomy)
-        if (!empty($filters)) {
-            foreach (array_keys($filters) as $active_tax) {
-                // Remove the current taxonomy from conditions
-                $shadow_filters = $filters;
-                unset($shadow_filters[$active_tax]);
+        // 2. Shadow Search for Term Counts (Dependency Logic)
+        // We group 'Content Type' taxes together so that selecting one doesn't zero out counts for others in the same group.
+        $or_groups = [
+            'content_type_group' => ['category', 'featured_item_category', 'featured_item_tag'], // These share the "Content Type" UI block
+        ];
 
-                // Perform shadow search
+        // Identify which "Logical Groups" are active
+        $active_logical_groups = [];
+        if (!empty($filters)) {
+            foreach (array_keys($filters) as $tax) {
+                $found_group = false;
+                foreach ($or_groups as $group_key => $group_taxes) {
+                    if (in_array($tax, $group_taxes)) {
+                        $active_logical_groups[$group_key] = $group_taxes;
+                        $found_group = true;
+                        break;
+                    }
+                }
+                if (!$found_group) {
+                    // This taxonomy is its own group (e.g. industry)
+                    $active_logical_groups[$tax] = [$tax];
+                }
+            }
+        }
+
+        if (!empty($active_logical_groups)) {
+            foreach ($active_logical_groups as $group_key => $taxes_in_group) {
+                // Prepare Shadow Context: Remove ALL filters belonging to this active group
+                $shadow_filters = $filters;
+                foreach ($taxes_in_group as $tax) {
+                    unset($shadow_filters[$tax]);
+                }
+
+                // Perform Shadow Search (Filtered by OTHER groups only)
                 $shadow_results = $engine->search($keywords, [
                     'filters' => $shadow_filters,
                     'sort' => $sort,
-                    'limit' => 1, // We only care about all_ids
+                    'limit' => 1000, 
                     'page' => 1,
                     'post_types' => $post_types,
                 ]);
                 
                 $shadow_ids = $shadow_results['all_ids'] ?? [];
                 
-                // Get counts specific to this taxonomy using the broader dataset
-                $shadow_counts = $this->get_term_counts($shadow_ids, $active_tax);
-                
-                // Merge/Overwrite these counts
-                // This ensures that for the active taxonomy, we show counts of "siblings" based on the parent context
-                foreach ($shadow_counts as $term_id => $count) {
-                    $term_counts[$term_id] = $count;
+                // Update counts for ALL taxonomies in this group
+                // This ensures we see "sibling" counts for everything in the group (e.g. White Papers count when Video is selected)
+                foreach ($taxes_in_group as $tax) {
+                    $shadow_counts = $this->get_term_counts($shadow_ids, $tax);
+                    foreach ($shadow_counts as $term_id => $count) {
+                        $term_counts[$term_id] = $count;
+                    }
                 }
             }
         }

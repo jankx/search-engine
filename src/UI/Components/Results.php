@@ -157,8 +157,41 @@ class Results extends AbstractComponent
         }
 
         if (!empty($filters)) {
-            $tax_query = ['relation' => 'AND'];
-            foreach ($filters as $taxonomy => $terms) {
+            // Fix for missing CPTs in Resources SSR context
+            if (isset($filters['featured_item_category']) || isset($filters['industry'])) {
+                $args['post_type'] = 'any'; 
+            }
+            
+            $tax_query = [];
+            $filters_list = $filters;
+
+            // Custom Grouping Logic for Content Type (OR logic)
+            // User treats these taxonomies as a single "Content Type" filter group
+            $or_groups = [['category', 'featured_item_category', 'featured_item_tag']];
+            
+            foreach ($or_groups as $group) {
+                $group_query = ['relation' => 'OR'];
+                $has_group_item = false;
+                foreach ($group as $tax) {
+                    if (!empty($filters_list[$tax])) {
+                        $group_query[] = [
+                            'taxonomy' => $tax,
+                            'field' => 'term_id',
+                            'terms' => (array) $filters_list[$tax],
+                            'operator' => 'IN',
+                        ];
+                        // Mark as consumed
+                        unset($filters_list[$tax]); 
+                        $has_group_item = true;
+                    }
+                }
+                if ($has_group_item) {
+                    $tax_query[] = $group_query;
+                }
+            }
+
+            // Standard AND logic for remaining filters
+            foreach ($filters_list as $taxonomy => $terms) {
                 if (!empty($terms)) {
                     $tax_query[] = [
                         'taxonomy' => $taxonomy,
@@ -168,8 +201,13 @@ class Results extends AbstractComponent
                     ];
                 }
             }
-            if (count($tax_query) > 1) {
-                $args['tax_query'] = $tax_query;
+            
+            if (!empty($tax_query)) {
+                if (count($tax_query) > 1) {
+                    $args['tax_query'] = array_merge(['relation' => 'AND'], $tax_query);
+                } else {
+                    $args['tax_query'] = $tax_query;
+                }
             }
         }
 
@@ -233,8 +271,37 @@ class Results extends AbstractComponent
         }
 
         if (!empty($filters)) {
-            $tax_query = ['relation' => 'AND'];
-            foreach ($filters as $taxonomy => $terms) {
+            // Fix for missing CPTs in Resources SSR context
+            if (isset($filters['featured_item_category']) || isset($filters['industry'])) {
+                $args['post_type'] = 'any'; 
+            }
+
+            $tax_query = [];
+            $filters_list = $filters;
+
+            $or_groups = [['category', 'featured_item_category', 'featured_item_tag']];
+            
+            foreach ($or_groups as $group) {
+                $group_query = ['relation' => 'OR'];
+                $has_group_item = false;
+                foreach ($group as $tax) {
+                    if (!empty($filters_list[$tax])) {
+                        $group_query[] = [
+                            'taxonomy' => $tax,
+                            'field' => 'term_id',
+                            'terms' => (array) $filters_list[$tax],
+                            'operator' => 'IN',
+                        ];
+                        unset($filters_list[$tax]);
+                        $has_group_item = true;
+                    }
+                }
+                if ($has_group_item) {
+                    $tax_query[] = $group_query;
+                }
+            }
+
+            foreach ($filters_list as $taxonomy => $terms) {
                 if (!empty($terms)) {
                     $tax_query[] = [
                         'taxonomy' => $taxonomy,
@@ -244,8 +311,13 @@ class Results extends AbstractComponent
                     ];
                 }
             }
-            if (count($tax_query) > 1) {
-                $args['tax_query'] = $tax_query;
+            
+            if (!empty($tax_query)) {
+                if (count($tax_query) > 1) {
+                    $args['tax_query'] = array_merge(['relation' => 'AND'], $tax_query);
+                } else {
+                    $args['tax_query'] = $tax_query;
+                }
             }
         }
 
