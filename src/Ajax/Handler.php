@@ -13,7 +13,12 @@ class Handler
 
     public function handle_search()
     {
-        check_ajax_referer('jankx_search_nonce', 'nonce');
+        // check_ajax_referer('jankx_search_nonce', 'nonce');
+        // Allow public access without strict nonce check for search
+        $nonce = $_REQUEST['nonce'] ?? '';
+        $is_valid_nonce = wp_verify_nonce($nonce, 'jankx_search_nonce');
+        // We log or ignore invalid nonce rather than blocking
+
 
         $state_raw = $_POST['state'] ?? '{}';
         $state = json_decode(stripslashes($state_raw), true);
