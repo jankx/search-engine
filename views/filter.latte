@@ -1,7 +1,7 @@
 <div class="jankx-search-filter filter-{$taxonomy}" data-settings="{$atts|json}">
-    <h4 n:if="!empty($atts['title']) || !empty($tax_obj->label)" class="filter-title">
+    <h3 n:if="!empty($atts['title']) || !empty($tax_obj->label)" class="filter-title">
         {$atts['title'] ?? $tax_obj->label}
-    </h4>
+    </h3>
     <ul class="filter-list">
         <li n:foreach="$terms as $term">
             <label>

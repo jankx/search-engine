@@ -1,7 +1,7 @@
 <div class="jankx-search-filters filter-group" data-settings="{$atts|json}" n:if="$has_items">
-    <h4 class="filter-title" n:if="!empty($atts['title'])">
+    <h3 class="filter-title" n:if="!empty($atts['title'])">
         {$atts['title']}
-    </h4>
+    </h3>
     
     {foreach $tax_data as $taxonomy => $data}
         <div class="filter-section">
