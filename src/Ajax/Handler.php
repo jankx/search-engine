@@ -255,48 +255,60 @@ class Handler
         if ($total_pages <= 1)
             return '';
 
-        if (function_exists('flatsome_pagination')) {
-            // Flatsome pagination needs a WP_Query object
-            $query = new \WP_Query();
-            $query->found_posts = $total;
-            $query->max_num_pages = $total_pages;
-            $query->query_vars['paged'] = $current_page;
-
-            ob_start();
-            echo flatsome_pagination($query);
-            return ob_get_clean();
+        // Build base URL with current args
+        $base_url = get_permalink(1296); // Resources Page ID
+        $query_args = [];
+        
+        if (!empty($state['q'])) {
+            $query_args['q'] = $state['q'];
         }
+        if (!empty($state['sort'])) {
+            $query_args['sort'] = $state['sort'];
+        }
+        
+        if (!empty($state['filters'])) {
+            foreach ($state['filters'] as $tax => $terms) {
+                if (!empty($terms)) {
+                    $query_args[$tax] = $terms;
+                }
+            }
+        }
+        
+        $base_url = add_query_arg($query_args, $base_url);
+        
+        // Generate links using WP core function
+        $links = paginate_links([
+            'base'      => add_query_arg('page', '%#%', $base_url),
+            'format'    => '',
+            'total'     => $total_pages,
+            'current'   => $current_page,
+            'type'      => 'array',
+            'prev_text' => '<i class="icon-angle-left"></i>',
+            'next_text' => '<i class="icon-angle-right"></i>',
+        ]);
+        
+        if (empty($links)) return '';
 
-        ob_start();
-        ?>
-        <ul class="page-numbers nav-pagination links text-center">
-            <?php if ($current_page > 1): ?>
-                <li>
-                    <a href="#" class="prev page-number" data-page="<?php echo $current_page - 1; ?>">
-                        <i class="icon-angle-left"></i>
-                    </a>
-                </li>
-            <?php endif; ?>
-
-            <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                <li>
-                    <?php if ($i == $current_page): ?>
-                        <span aria-current="page" class="page-number current"><?php echo $i; ?></span>
-                    <?php else: ?>
-                        <a href="#" class="page-number" data-page="<?php echo $i; ?>"><?php echo $i; ?></a>
-                    <?php endif; ?>
-                </li>
-            <?php endfor; ?>
-
-            <?php if ($current_page < $total_pages): ?>
-                <li>
-                    <a href="#" class="next page-number" data-page="<?php echo $current_page + 1; ?>">
-                        <i class="icon-angle-right"></i>
-                    </a>
-                </li>
-            <?php endif; ?>
-        </ul>
-        <?php
-        return ob_get_clean();
+        $output = '<ul class="page-numbers nav-pagination links text-center">';
+        foreach ($links as $link) {
+            // Extract page number from href to add data-page attribute for JS
+            // First check for query param format (?page=2 or &page=2)
+            if (preg_match('/[?&]page=(\d+)/', $link, $matches)) {
+                $p = $matches[1];
+                $link = str_replace('<a ', '<a data-page="' . esc_attr($p) . '" ', $link);
+            } 
+            // Fallback check for permalink format (/page/2) although base usually enforces query arg
+            elseif (preg_match('/\/page\/(\d+)/', $link, $matches)) {
+                $p = $matches[1];
+                $link = str_replace('<a ', '<a data-page="' . esc_attr($p) . '" ', $link);
+            }
+            
+            // Adjust classes for Flatsome compatibility (page-numbers -> page-number)
+            $link = str_replace('page-numbers', 'page-number', $link);
+            $output .= '<li>' . $link . '</li>';
+        }
+        $output .= '</ul>';
+        
+        return $output;
     }
 }

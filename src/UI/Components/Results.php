@@ -103,13 +103,46 @@ class Results extends AbstractComponent
     {
         $post_types = $this->resolve_post_types($atts);
 
+        $paged = (get_query_var('paged')) ? get_query_var('paged') : 1;
+        if (isset($_GET['page'])) {
+            $paged = max(1, (int) $_GET['page']);
+        }
+
         $args = [
             'post_type' => $post_types,
             'post_status' => 'publish',
             'posts_per_page' => $atts['limit'] ?? 10,
+            'paged' => $paged,
             'orderby' => 'date',
             'order' => 'DESC',
         ];
+
+        if (!empty($_GET['q'])) {
+            $args['s'] = sanitize_text_field($_GET['q']);
+        }
+
+        if (!empty($_GET['sort'])) {
+            switch ($_GET['sort']) {
+                case 'date_asc':
+                    $args['orderby'] = 'date';
+                    $args['order'] = 'ASC';
+                    break;
+                case 'title_asc':
+                    $args['orderby'] = 'title';
+                    $args['order'] = 'ASC';
+                    break;
+                case 'title_desc':
+                    $args['orderby'] = 'title';
+                    $args['order'] = 'DESC';
+                    break;
+                case 'relevance':
+                    if (!empty($args['s'])) {
+                        $args['orderby'] = 'relevance';
+                        unset($args['order']);
+                    }
+                    break;
+            }
+        }
 
         // Apply filters from URL to initial render
         $filters = $_GET['filter'] ?? [];
@@ -169,12 +202,23 @@ class Results extends AbstractComponent
 
         // We need total posts for the initial render's pagination
         $post_types = $this->resolve_post_types($atts);
+        
+        $paged = (get_query_var('paged')) ? get_query_var('paged') : 1;
+        if (isset($_GET['page'])) {
+            $paged = max(1, (int) $_GET['page']);
+        }
+
         $args = [
             'post_type' => $post_types,
             'post_status' => 'publish',
             'posts_per_page' => $atts['limit'] ?? 10,
+            'paged' => $paged,
             'fields' => 'ids',
         ];
+
+        if (!empty($_GET['q'])) {
+            $args['s'] = sanitize_text_field($_GET['q']);
+        }
 
         // Apply filters from URL to pagination query too
         $filters = $_GET['filter'] ?? [];
@@ -211,7 +255,13 @@ class Results extends AbstractComponent
             echo flatsome_pagination($query);
         } else {
             $handler = new \Jankx\SearchEngine\Ajax\Handler();
-            echo $handler->render_pagination_html($query->found_posts, $atts['limit'] ?? 10, 1, $atts);
+            // Pass current state to render_pagination_html to generate corect links
+            $state = [
+                'q' => $_GET['q'] ?? '',
+                'sort' => $_GET['sort'] ?? '',
+                'filters' => $filters,
+            ];
+            echo $handler->render_pagination_html($query->found_posts, $atts['limit'] ?? 10, $paged, $state);
         }
     }
 

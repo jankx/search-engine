@@ -26,6 +26,7 @@ class JankxSearchHub {
     private $pagination: HTMLElement | null = null;
     private $selectedFilters: HTMLElement | null = null;
     private $featuredItems: HTMLElement | null = null;
+    private isInitializing: boolean = true;
 
     constructor() {
         this.$results = document.querySelector('.jankx-search-results-container .results-grid');
@@ -39,6 +40,27 @@ class JankxSearchHub {
         this.collectSettings();
         this.collectInitialState();
         this.bindEvents();
+
+        window.addEventListener('popstate', (event) => {
+            if (event.state) {
+                this.state = event.state;
+                this.updateUIFromState();
+                this.search(false);
+            }
+        });
+
+        // Trigger initial search if URL state implies non-default view
+        const hasFilters = Object.values(this.state.filters).some(t => t.length > 0);
+        // We compare sort against 'relevance' or we can trust that if sort param exists it might need update
+        // But crucially for Page > 1:
+        if (this.state.page > 1 || this.state.q || (this.state.sort && this.state.sort !== 'relevance') || hasFilters) {
+            this.search(false);
+        }
+
+        // Release initialization lock
+        setTimeout(() => {
+            this.isInitializing = false;
+        }, 800);
     }
 
     private collectInitialState() {
@@ -51,6 +73,89 @@ class JankxSearchHub {
         if (queryInput) {
             this.state.q = queryInput.value;
         }
+
+        // Parse from URL
+        const queryParams = new URLSearchParams(window.location.search);
+
+        // Page
+        if (queryParams.has('page')) {
+            const p = parseInt(queryParams.get('page') || '1', 10);
+            if (p > 1) this.state.page = p;
+        }
+
+        // Sort
+        if (queryParams.has('sort')) {
+            this.state.sort = queryParams.get('sort') || 'relevance';
+            if (sortSelect) sortSelect.value = this.state.sort;
+        }
+
+        // Q
+        if (queryParams.has('q')) {
+            this.state.q = queryParams.get('q') || '';
+            if (queryInput) queryInput.value = this.state.q;
+        }
+
+        // Filters
+        // We know known taxes from settings or hardcoded?
+        // Let's use the hardcoded list or discover from DOM?
+        const knownTaxes = ['featured_item_category', 'industry', 'category', 'thought_leader'];
+
+        knownTaxes.forEach(tax => {
+            // Check for tax or tax[]
+            const vals = queryParams.getAll(tax).concat(queryParams.getAll(tax + '[]'));
+            if (vals.length > 0) {
+                if (!this.state.filters[tax]) this.state.filters[tax] = [];
+                vals.forEach(val => {
+                    if (!this.state.filters[tax].includes(val)) {
+                        this.state.filters[tax].push(val);
+                    }
+                    // Check UI
+                    const cb = document.querySelector(`.jankx-search-filters input[name="filter[${tax}][]"][value="${val}"]`) as HTMLInputElement;
+                    if (cb) cb.checked = true;
+                });
+            }
+        });
+
+        this.updateFeaturedItemsVisibility();
+    }
+
+    private updateUIFromState() {
+        // Restore UI based on state (useful for back button)
+        // Checkboxes
+        document.querySelectorAll('.jankx-search-filters input[type="checkbox"]').forEach(el => {
+            (el as HTMLInputElement).checked = false;
+        });
+        Object.keys(this.state.filters).forEach(tax => {
+            this.state.filters[tax].forEach(val => {
+                const cb = document.querySelector(`.jankx-search-filters input[name="filter[${tax}][]"][value="${val}"]`) as HTMLInputElement;
+                if (cb) cb.checked = true;
+            });
+        });
+
+        // Selected Filters UI
+        this.clearAllSelectedFiltersUI();
+        Object.keys(this.state.filters).forEach(tax => {
+            this.state.filters[tax].forEach(val => {
+                // Try to find label
+                const cb = document.querySelector(`.jankx-search-filters input[name="filter[${tax}][]"][value="${val}"]`) as HTMLInputElement;
+                let name = val;
+                let taxLabel = '';
+                if (cb) {
+                    name = cb.closest('label')?.querySelector('.term-name')?.textContent?.trim() || val;
+                    taxLabel = cb.closest('.filter-group')?.querySelector('.filter-title')?.textContent?.trim() || '';
+                }
+                this.updateSelectedFilterUI(tax, val, name, true, taxLabel);
+            });
+        });
+
+        // Keyword
+        const qInput = document.querySelector('.jankx-search-keyword .search-input') as HTMLInputElement;
+        if (qInput) qInput.value = this.state.q;
+        if (this.state.q) {
+            this.updateSelectedFilterUI('search_keyword', 'current_query', this.state.q, true, '');
+        }
+
+        this.updateFeaturedItemsVisibility();
     }
 
     private collectSettings() {
@@ -71,6 +176,7 @@ class JankxSearchHub {
     private bindEvents() {
         // Keyword Search
         document.addEventListener('input', (e) => {
+            if (this.isInitializing || !e.isTrusted) return;
             const target = e.target as HTMLInputElement;
             if (target.closest('.jankx-search-keyword .search-input')) {
                 const val = target.value;
@@ -87,6 +193,7 @@ class JankxSearchHub {
 
         // Filters
         document.addEventListener('change', (e) => {
+            if (this.isInitializing || !e.isTrusted) return;
             const target = e.target as HTMLInputElement;
             if (target.matches('.jankx-search-filters input[type="checkbox"]')) {
                 const nameMatch = target.name.match(/filter\[([^\]]+)\]/);
@@ -123,6 +230,7 @@ class JankxSearchHub {
 
         // Sorter
         document.addEventListener('change', (e) => {
+            if (this.isInitializing || !e.isTrusted) return;
             const target = e.target as HTMLSelectElement;
             if (target.closest('.jankx-search-sorter .sort-select')) {
                 this.state.sort = target.value;
@@ -136,7 +244,19 @@ class JankxSearchHub {
             const paginationLink = target.closest('.pagination-container .page-number') as HTMLElement;
             if (paginationLink) {
                 e.preventDefault();
-                const pageNum = paginationLink.getAttribute('data-page');
+                let pageNum = paginationLink.getAttribute('data-page');
+
+                // Fallback: Try to parse from HREF if data-page missing
+                if (!pageNum) {
+                    const href = paginationLink.getAttribute('href');
+                    if (href) {
+                        const match = href.match(/[?&]page=(\d+)/) || href.match(/\/page\/(\d+)/);
+                        if (match) {
+                            pageNum = match[1];
+                        }
+                    }
+                }
+
                 if (pageNum) {
                     this.state.page = parseInt(pageNum, 10);
                     this.search();
@@ -225,7 +345,7 @@ class JankxSearchHub {
         }, 500);
     }
 
-    private async search() {
+    private async search(pushState = true) {
         if (!this.$results) return;
 
         // Show skeletons
@@ -263,14 +383,15 @@ class JankxSearchHub {
                 if (this.$pagination) {
                     this.$pagination.innerHTML = result.data.pagination;
                 }
-                if (this.$pagination) {
-                    this.$pagination.innerHTML = result.data.pagination;
-                }
                 if (result.data.term_counts !== undefined) {
                     this.updateTermCounts(result.data.term_counts);
                 }
                 if (result.data.selected_filters !== undefined) {
                     this.syncSelectedFiltersFromHTML(result.data.selected_filters);
+                }
+
+                if (pushState) {
+                    this.updateBrowserUrl();
                 }
             }
         } catch (error) {
@@ -280,6 +401,38 @@ class JankxSearchHub {
             this.$results.classList.remove('loading');
             this.$results.style.opacity = '1';
         }
+    }
+
+    private updateBrowserUrl() {
+        const params = new URLSearchParams();
+
+        // Q
+        if (this.state.q) params.set('q', this.state.q);
+
+        // Sort
+        if (this.state.sort && this.state.sort !== 'relevance') {
+            params.set('sort', this.state.sort);
+        }
+
+        // Page
+        if (this.state.page > 1) {
+            params.set('page', this.state.page.toString());
+        }
+
+        // Filters
+        Object.keys(this.state.filters).forEach(tax => {
+            const terms = this.state.filters[tax];
+            if (terms && terms.length > 0) {
+                if (terms.length === 1) {
+                    params.set(tax, terms[0]);
+                } else {
+                    terms.forEach(id => params.append(tax + '[]', id));
+                }
+            }
+        });
+
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.pushState(this.state, '', newUrl);
     }
 
     private updateTermCounts(counts: Record<string, number>) {
@@ -297,9 +450,6 @@ class JankxSearchHub {
                     countSpan.textContent = `(${count})`;
                 }
 
-                // Optional: Disable input if count is 0?
-                // The user didn't explicitly ask to disable, but showing (0) is required.
-                // We'll stick to updating the text.
                 if (count === 0 && !input.checked) {
                     label.classList.add('disabled');
                     input.disabled = true;
