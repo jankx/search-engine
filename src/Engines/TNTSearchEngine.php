@@ -87,10 +87,38 @@ class TNTSearchEngine extends AbstractEngine
         }
 
         // Filter by Taxonomies (Checkboxes values are now term IDs)
-        // LOGIC: AND between different taxonomies (groups), OR within the same taxonomy (group)
+        // LOGIC: AND between different filter groups, OR within the same filter group (Content Type)
         if (!empty($args['filters'])) {
             $tax_query = [];
-            foreach ($args['filters'] as $taxonomy => $terms) {
+            $filters_list = $args['filters'];
+
+            // Custom Grouping Logic for Content Type (OR logic)
+            // User treats these taxonomies as a single "Content Type" filter group
+            $or_groups = [['category', 'featured_item_category', 'featured_item_tag']];
+            
+            foreach ($or_groups as $group) {
+                $group_query = ['relation' => 'OR'];
+                $has_group_item = false;
+                foreach ($group as $tax) {
+                    if (!empty($filters_list[$tax])) {
+                        $group_query[] = [
+                            'taxonomy' => $tax,
+                            'field' => 'term_id',
+                            'terms' => (array) $filters_list[$tax],
+                            'operator' => 'IN',
+                        ];
+                        // Mark as consumed so we don't add it again in the standard loop
+                        unset($filters_list[$tax]); 
+                        $has_group_item = true;
+                    }
+                }
+                if ($has_group_item) {
+                    $tax_query[] = $group_query;
+                }
+            }
+
+            // Standard AND logic for remaining filters (e.g. Industry)
+            foreach ($filters_list as $taxonomy => $terms) {
                 if (empty($terms))
                     continue;
                 $tax_query[] = [
