@@ -2,6 +2,16 @@
 
 All notable changes to the `jankx/search-engine` package will be documented in this file.
 
+## [1.1.1] - 2026-02-05
+### Changed
+- **Default Sort Order**: Implemented dynamic default sorting:
+  - **Date Descending (Newest)**: Used when the URL has no search query or filters (e.g., initial landing).
+  - **Relevance**: Automatically switched to when a user enters keywords or selects filters (unless manually overridden).
+- **Documentation**: Updated `README.md` to include comprehensive details on "Smart Facets" (Live Term Counts) and "Shadow Search" logic.
+
+### Fixed
+- Fixed an issue where `featured_item_category` was not correctly registered for CPTs (`event`, `webinar`, `whitepaper`, `ebook`) by enforcing `register_taxonomy_for_object_type` and adjusting init priority.
+
 ## [1.0.1] - 2026-01-29
 ### Changed
 - Incremented package version to `1.0.17`.

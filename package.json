@@ -1,6 +1,6 @@
 {
   "name": "@jankx/search-engine",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "`jankx/search-engine` là một thành phần cốt lõi trong hệ sinh thái **Jankx Framework**, được thiết kế để giải quyết vấn đề hiệu năng tìm kiếm của WordPress trên mọi môi trường lưu trữ.",
   "homepage": "https://github.com/jankx/search-engine#readme",
   "bugs": {

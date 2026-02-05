@@ -16,7 +16,7 @@ class JankxSearchHub {
     private state: SearchState = {
         q: '',
         filters: {},
-        sort: 'relevance',
+        sort: 'date_desc',
         page: 1
     };
 
@@ -54,7 +54,7 @@ class JankxSearchHub {
         const hasFilters = Object.values(this.state.filters).some(t => t.length > 0);
         // We compare sort against 'relevance' or we can trust that if sort param exists it might need update
         // But crucially for Page > 1:
-        if (this.state.page > 1 || this.state.q || (this.state.sort && this.state.sort !== 'relevance') || hasFilters) {
+        if (this.state.page > 1 || this.state.q || (this.state.sort && this.state.sort !== 'date_desc') || hasFilters) {
             this.search(false);
         }
 
@@ -65,57 +65,55 @@ class JankxSearchHub {
     }
 
     private collectInitialState() {
-        const sortSelect = document.querySelector('.jankx-search-sorter .sort-select') as HTMLSelectElement;
-        if (sortSelect) {
-            this.state.sort = sortSelect.value;
-        }
-
-        const queryInput = document.querySelector('.jankx-search-keyword .search-input') as HTMLInputElement;
-        if (queryInput) {
-            this.state.q = queryInput.value;
-        }
-
-        // Parse from URL
         const queryParams = new URLSearchParams(window.location.search);
 
-        // Page
-        if (queryParams.has('page')) {
-            const p = parseInt(queryParams.get('page') || '1', 10);
-            if (p > 1) this.state.page = p;
-        }
+        const q = queryParams.get('q') || '';
+        const sortSelect = document.querySelector('.jankx-search-sorter .sort-select') as HTMLSelectElement;
+        const queryInput = document.querySelector('.jankx-search-keyword .search-input') as HTMLInputElement;
 
-        // Sort
-        if (queryParams.has('sort')) {
-            this.state.sort = queryParams.get('sort') || 'relevance';
-            if (sortSelect) sortSelect.value = this.state.sort;
-        }
-
-        // Q
-        if (queryParams.has('q')) {
-            this.state.q = queryParams.get('q') || '';
-            if (queryInput) queryInput.value = this.state.q;
-        }
-
-        // Filters
-        // We know known taxes from settings or hardcoded?
-        // Let's use the hardcoded list or discover from DOM?
+        // 1. Collect Filters
         const knownTaxes = ['featured_item_category', 'industry', 'category', 'thought_leader'];
+        let hasActiveFilters = false;
 
         knownTaxes.forEach(tax => {
-            // Check for tax or tax[]
             const vals = queryParams.getAll(tax).concat(queryParams.getAll(tax + '[]'));
             if (vals.length > 0) {
+                hasActiveFilters = true;
                 if (!this.state.filters[tax]) this.state.filters[tax] = [];
                 vals.forEach(val => {
                     if (!this.state.filters[tax].includes(val)) {
                         this.state.filters[tax].push(val);
                     }
-                    // Check UI
                     const cb = document.querySelector(`.jankx-search-filters input[name="filter[${tax}][]"][value="${val}"]`) as HTMLInputElement;
                     if (cb) cb.checked = true;
                 });
             }
         });
+
+        // 2. Set Sort Logic
+        if (queryParams.has('sort')) {
+            this.state.sort = queryParams.get('sort') || 'date_desc';
+        } else {
+            // Case: No explicit sort param.
+            // If URL has params (keyword or filters) -> Relevance
+            // Else (Root URL /resources/) -> Date Desc
+            if (q || hasActiveFilters) {
+                this.state.sort = 'relevance';
+            } else {
+                this.state.sort = 'date_desc';
+            }
+        }
+
+        // 3. UI Updates
+        if (sortSelect) sortSelect.value = this.state.sort;
+        if (queryInput) queryInput.value = q;
+        this.state.q = q;
+
+        // 4. Page
+        if (queryParams.has('page')) {
+            const p = parseInt(queryParams.get('page') || '1', 10);
+            if (p > 1) this.state.page = p;
+        }
 
         this.updateFeaturedItemsVisibility();
     }
@@ -432,7 +430,7 @@ class JankxSearchHub {
         if (this.state.q) params.set('q', this.state.q);
 
         // Sort
-        if (this.state.sort && this.state.sort !== 'relevance') {
+        if (this.state.sort && this.state.sort !== 'date_desc') {
             params.set('sort', this.state.sort);
         }
 

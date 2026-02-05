@@ -25,7 +25,14 @@ class Handler
 
         $keywords = $state['q'] ?? '';
         $filters = $state['filters'] ?? [];
-        $sort = $state['sort'] ?? 'relevance';
+        // Default sort logic matches frontend: 
+        // If keywords or filters exist -> Relevance. Otherwise -> Date Desc.
+        if (isset($state['sort'])) {
+            $sort = $state['sort'];
+        } else {
+            $has_filters = !empty($filters);
+            $sort = (!empty($keywords) || $has_filters) ? 'relevance' : 'date_desc';
+        }
 
         // Initialize Search Engine (using TNTSearch for MVP)
         $engine = SearchEngine::getInstance('tntsearch', [
