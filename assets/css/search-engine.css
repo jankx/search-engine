@@ -65,6 +65,7 @@
     cursor: pointer;
     font-size: 0.95rem;
     color: var(--jankx-search-text);
+    font-weight: 400;
 }
 
 .filter-list label.disabled,
