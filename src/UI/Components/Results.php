@@ -62,6 +62,7 @@ class Results extends AbstractComponent
             while ($query->have_posts()) {
                 $query->the_post();
                 $post = get_post();
+
                 $video_url = get_post_meta($post->ID, '_video_embed_url', true) ?: get_post_meta($post->ID, '_video_url', true);
                 $is_video = !empty($video_url);
                 $enable_setting = $atts['enable_video_popup'] ?? 'true';
@@ -86,7 +87,16 @@ class Results extends AbstractComponent
                         <?php endif; ?>
                     </div>
                     <div class="result-content">
-                        <span class="result-label"><?php echo esc_html(strtoupper($this->get_post_label($post))); ?></span>
+                        <?php $label_data = $this->get_post_label_data($post); ?>
+                        <span class="result-label">
+                            <?php if ($label_data['url']): ?>
+                                <a href="<?php echo esc_url($label_data['url']); ?>" data-term-id="<?php echo esc_attr($label_data['term_id']); ?>" data-taxonomy="<?php echo esc_attr($label_data['taxonomy']); ?>">
+                                    <?php echo esc_html(strtoupper($label_data['text'])); ?>
+                                </a>
+                            <?php else: ?>
+                                <?php echo esc_html(strtoupper($label_data['text'])); ?>
+                            <?php endif; ?>
+                        </span>
                         <h3 class="result-title">
                             <a href="<?php echo esc_url($link); ?>" class="<?php echo esc_attr($class); ?>"><?php the_title(); ?></a>
                         </h3>
@@ -203,11 +213,11 @@ class Results extends AbstractComponent
             }
             
             if (!empty($tax_query)) {
-                if (count($tax_query) > 1) {
+                 if (count($tax_query) > 1) {
                     $args['tax_query'] = array_merge(['relation' => 'AND'], $tax_query);
-                } else {
+                 } else {
                     $args['tax_query'] = $tax_query;
-                }
+                 }
             }
         }
 
@@ -275,7 +285,7 @@ class Results extends AbstractComponent
             if (isset($filters['featured_item_category']) || isset($filters['industry'])) {
                 $args['post_type'] = 'any'; 
             }
-
+            
             $tax_query = [];
             $filters_list = $filters;
 
@@ -313,11 +323,11 @@ class Results extends AbstractComponent
             }
             
             if (!empty($tax_query)) {
-                if (count($tax_query) > 1) {
+                 if (count($tax_query) > 1) {
                     $args['tax_query'] = array_merge(['relation' => 'AND'], $tax_query);
-                } else {
+                 } else {
                     $args['tax_query'] = $tax_query;
-                }
+                 }
             }
         }
 
@@ -361,6 +371,8 @@ class Results extends AbstractComponent
         $use_popup = ($enable_setting === 'true' || $enable_setting === true) && $is_video;
         $link = $use_popup ? $video_url : get_permalink($post);
         $class = $use_popup ? 'open-video' : '';
+        
+        $label_data = $this->get_post_label_data($post);
         // Simple fallback default item if no filter hooks it
         ?>
         <div class="result-item default-fallback">
@@ -377,7 +389,15 @@ class Results extends AbstractComponent
                 <?php endif; ?>
             </div>
             <div class="result-content">
-                <span class="result-label"><?php echo esc_html(strtoupper($this->get_post_label($post))); ?></span>
+                <span class="result-label">
+                    <?php if ($label_data['url']): ?>
+                        <a href="<?php echo esc_url($label_data['url']); ?>" data-term-id="<?php echo esc_attr($label_data['term_id']); ?>" data-taxonomy="<?php echo esc_attr($label_data['taxonomy']); ?>">
+                            <?php echo esc_html(strtoupper($label_data['text'])); ?>
+                        </a>
+                    <?php else: ?>
+                        <?php echo esc_html(strtoupper($label_data['text'])); ?>
+                    <?php endif; ?>
+                </span>
                 <h3 class="result-title"><a href="<?php echo esc_url($link); ?>"
                         class="<?php echo esc_attr($class); ?>"><?php echo get_the_title($post); ?></a>
                 </h3>
@@ -387,18 +407,21 @@ class Results extends AbstractComponent
         <?php
     }
 
-    protected function get_post_label($post)
+    protected function get_post_label_data($post)
     {
         $post_type = get_post_type($post);
         $taxonomies = get_object_taxonomies($post_type, 'names');
 
-        // Priority taxonomies
-        $priority_taxonomies = ['category', 'product_cat', 'featured_item_category', 'topic'];
+        // Priority taxonomies (Prioritize featured_item_category as it is primary for resources)
+        $priority_taxonomies = ['featured_item_category', 'category', 'event_category', 'product_cat', 'topic'];
         $best_tax = '';
         foreach ($priority_taxonomies as $tax) {
-            if (in_array($tax, $taxonomies)) {
-                $best_tax = $tax;
-                break;
+            // Check if post actually has terms in this tax before selecting it as best tax
+            // We use wp_get_object_terms for a more direct lookup, bypassing some strict post_type checks
+            $terms = wp_get_object_terms($post->ID, $tax);
+            if (!empty($terms) && !is_wp_error($terms)) {
+                 $best_tax = $tax;
+                 break;
             }
         }
 
@@ -406,23 +429,68 @@ class Results extends AbstractComponent
         if (!$best_tax) {
             foreach ($taxonomies as $tax) {
                 if (str_ends_with($tax, '_category') || str_ends_with($tax, '_cat')) {
-                    $best_tax = $tax;
-                    break;
+                   $terms = wp_get_object_terms($post->ID, $tax);
+                   if (!empty($terms) && !is_wp_error($terms)) {
+                       $best_tax = $tax;
+                       break;
+                   }
                 }
             }
         }
 
         if (!$best_tax && !empty($taxonomies)) {
-            $best_tax = $taxonomies[0];
+            // Last resort
+             foreach ($taxonomies as $tax) {
+                 $terms = wp_get_object_terms($post->ID, $tax);
+                 if (!empty($terms) && !is_wp_error($terms)) {
+                     $best_tax = $tax;
+                     break;
+                 }
+             }
         }
 
+        $label_data = [
+            'text' => get_post_type_object($post_type)->labels->singular_name,
+            'url' => '',
+            'term_id' => '',
+            'taxonomy' => ''
+        ];
+
         if ($best_tax) {
-            $terms = get_the_terms($post, $best_tax);
+            $terms = wp_get_object_terms($post->ID, $best_tax);
             if (!empty($terms) && !is_wp_error($terms)) {
-                return $terms[0]->name;
+                $term = $terms[0];
+                $label_data['text'] = $term->name;
+                $label_data['term_id'] = $term->term_id;
+                $label_data['taxonomy'] = $best_tax;
+                
+                // Create filter URL
+                // Use simplified URL params (e.g. ?featured_item_category=110) matching list results logic
+                $current_url = remove_query_arg('page');
+                
+                // Remove 'filter' array param to keep URL clean (preferring simple params)
+                $current_url = remove_query_arg('filter', $current_url);
+
+                $label_data['url'] = add_query_arg(
+                    [$best_tax => $term->term_id], 
+                    $current_url
+                );
             }
         }
 
-        return get_post_type_object($post_type)->labels->singular_name;
+        // Fallback: If no URL generated (e.g. falls back to Post Type Name), link to Archive
+        if (empty($label_data['url'])) {
+             $archive_link = get_post_type_archive_link($post_type);
+             if ($archive_link) {
+                 $label_data['url'] = $archive_link;
+             }
+        }
+
+        return $label_data;
+    }
+    
+    // Legacy support alias
+    public function get_post_label($post) {
+        return $this->get_post_label_data($post)['text'];
     }
 }
