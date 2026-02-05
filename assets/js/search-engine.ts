@@ -40,6 +40,7 @@ class JankxSearchHub {
         this.collectSettings();
         this.collectInitialState();
         this.bindEvents();
+        this.disableEmptyFiltersOnLoad();
 
         window.addEventListener('popstate', (event) => {
             if (event.state) {
@@ -117,6 +118,27 @@ class JankxSearchHub {
         });
 
         this.updateFeaturedItemsVisibility();
+    }
+
+    private disableEmptyFiltersOnLoad() {
+        const checkboxes = document.querySelectorAll('.jankx-search-filters input[type="checkbox"]');
+        checkboxes.forEach((e) => {
+            const input = e as HTMLInputElement;
+            const label = input.closest('label');
+            if (label) {
+                const countSpan = label.querySelector('.term-count');
+                if (countSpan && countSpan.textContent) {
+                    const match = countSpan.textContent.match(/\((\d+)\)/);
+                    if (match) {
+                        const count = parseInt(match[1], 10);
+                        if (count === 0 && !input.checked) {
+                            label.classList.add('disabled');
+                            input.disabled = true;
+                        }
+                    }
+                }
+            }
+        });
     }
 
     private updateUIFromState() {
